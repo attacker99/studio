@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -32,9 +33,37 @@ const generateCardImageFlow = ai.defineFlow(
     outputSchema: GenerateCardImageOutputSchema,
   },
   async ({ cardName }) => {
+    const parts = cardName.split(' ');
+    let finalPrompt;
+
+    const numberMap: { [key: string]: number } = {
+      'Ace': 1, 'Two': 2, 'Three': 3, 'Four': 4, 'Five': 5,
+      'Six': 6, 'Seven': 7, 'Eight': 8, 'Nine': 9, 'Ten': 10
+    };
+    const suitMap: { [key: string]: string } = {
+      'Wands': 'wands or staves',
+      'Cups': 'cups or chalices',
+      'Swords': 'swords',
+      'Pentacles': 'pentacles or coins'
+    };
+
+    const numberWord = parts[0];
+    const suitWord = parts[2];
+    const isNumberedMinorArcana = parts.length === 3 && parts[1] === 'of' && numberMap[numberWord] && suitMap[suitWord];
+    
+    let promptInstruction = `An artistic, visually stunning tarot card illustration of "${cardName}".`
+
+    if (isNumberedMinorArcana) {
+      const number = numberMap[numberWord];
+      const suit = suitMap[suitWord];
+      promptInstruction += ` The artwork MUST prominently feature exactly ${number} ${suit}. For example, the "Eight of Cups" must show exactly eight cups. This is a strict requirement.`
+    }
+
+    finalPrompt = `${promptInstruction} The final image should look like a physical tarot card with clearly visible rounded corners and a consistent border. The card's artwork should be mystical, ethereal, detailed, with symbolic elements, all unified by a dark, cosmic background theme. The style should be reminiscent of the classic Rider-Waite tarot deck, but with a modern, surreal, and a degen cat-like twist. The name '${cardName}' should be written at the bottom of the card in an elegant font.`;
+
     const { media } = await ai.generate({
       model: 'googleai/gemini-2.0-flash-preview-image-generation',
-      prompt: `An artistic, visually stunning tarot card illustration of "${cardName}". The final image should look like a physical tarot card with clearly visible rounded corners and a consistent border. The card's artwork should be mystical, ethereal, detailed, with symbolic elements, all unified by a dark, cosmic background theme. The style should be reminiscent of the classic Rider-Waite tarot deck, but with a modern, surreal, and a degen cat-like twist. The name '${cardName}' should be written at the bottom of the card in an elegant font.`,
+      prompt: finalPrompt,
       config: {
         responseModalities: ['TEXT', 'IMAGE'],
       },
