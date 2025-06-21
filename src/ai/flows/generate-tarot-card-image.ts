@@ -32,13 +32,14 @@ const generateTarotCardImageFlow = ai.defineFlow(
     const { cardName } = input;
     
     // Improved prompt to be more specific and reliable
-    const imagePrompt = `An artistic, professional illustration of the "${cardName}" tarot card.
-Key elements and symbolism of the card must be present.
+    const imagePrompt = `An artistic, professional illustration of the "${cardName}" tarot card, reimagined for a cat-themed deck called "Degen Tarot Cat".
+The main character or characters in the card MUST be cats, embodying the spirit of the card. The cat should have a slightly chaotic, "degen" but wise vibe.
+Key elements and classic symbolism of the tarot card must be present, but adapted to the cat theme.
 The style should be mystical, fantasy art, with rich colors and intricate details.
 The background MUST be a dark, cosmic, celestial, or nebula scene. DO NOT use a solid color or white background.
 The image must have rounded corners like a playing card.
 The card name should NOT be written on the image.
-If the card is a numbered suit card (e.g., 'Six of Swords'), the image MUST depict the correct number of items (e.g., exactly 6 swords).
+If the card is a numbered suit card (e.g., 'Six of Swords'), the image MUST depict the correct number of items (e.g., exactly 6 swords). For example, The "Three of Cups" should show three cats celebrating with three cups.
 `;
 
     const { media } = await ai.generate({
