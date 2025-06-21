@@ -35,8 +35,9 @@ export default function ImageGeneratorPage() {
                 setProgressMessage(`Generating card ${i + 1} of ${TAROT_DECK.length}: ${cardName}`);
                 setGenerationProgress(progressPercentage);
                 
-                // Small delay to avoid overwhelming APIs.
-                await new Promise(resolve => setTimeout(resolve, 200));
+                // Delay to respect the API rate limit (10 requests/minute).
+                // 7 seconds is a safe buffer.
+                await new Promise(resolve => setTimeout(resolve, 7000));
 
                 const result = await generateTarotCardImage({ cardName });
                 
@@ -66,7 +67,10 @@ export default function ImageGeneratorPage() {
             <Card className="w-full max-w-6xl">
                 <CardHeader>
                     <CardTitle className="font-headline text-3xl">Tarot Card Image Generator</CardTitle>
-                    <CardDescription>Generate the artwork for your Degen Tarot Cat deck. Click the button to generate all 78 cards.</CardDescription>
+                    <CardDescription>
+                        Generate the artwork for your Degen Tarot Cat deck. Click the button to generate all 78 cards.
+                        This will take about 9 minutes due to API rate limits (10 cards/minute).
+                    </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <Button onClick={handleGenerateAll} disabled={isGenerating} size="lg" className="w-full">
