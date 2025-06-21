@@ -1,7 +1,7 @@
 // This file contains the paths to the pre-generated images for the tarot cards.
 // The images themselves should be placed in the public/images/tarot/ folder.
 
-function slugify(text: string): string {
+export function slugify(text: string): string {
   return text
     .toString()
     .toLowerCase()
@@ -31,28 +31,11 @@ const cardNames = [
   'Page of Pentacles', 'Knight of Pentacles', 'Queen of Pentacles', 'King of Pentacles'
 ];
 
-// In a real app, you would have actual images here. We'll use a single placeholder.
-// To add your own images, place them in `public/images/tarot/` and ensure the filenames match the slugified card names.
-// For example, 'The Fool' becomes 'the-fool.png'.
-const placeholderImage = 'https://placehold.co/250x440.png';
-
+// This creates an object that maps each card name to its corresponding image file path.
+// The images should be placed in the `public/images/tarot/` directory.
+// For example, the image for 'The Fool' should be at `public/images/tarot/the-fool.png`.
+// You can use the Image Generator page at /admin/image-generator to create these images.
 export const cardImageMap: { [key: string]: string } = cardNames.reduce((acc, cardName) => {
-  // To use unique images, you would generate them and use the slugified name:
-  // acc[cardName] = `/images/tarot/${slugify(cardName)}.png`;
-  // For now, we use one placeholder for all.
-  acc[cardName] = placeholderImage;
-  return acc;
-}, {} as { [key: string]: string });
-
-
-// This creates an object like:
-// {
-//   'The Fool': '/images/tarot/the-fool.png',
-//   'The Magician': '/images/tarot/the-magician.png',
-//   ...
-// }
-// For now, we will point all of them to a single placeholder you can replace.
-export const realCardImageMap: { [key: string]: string } = cardNames.reduce((acc, cardName) => {
   acc[cardName] = `/images/tarot/${slugify(cardName)}.png`;
   return acc;
 }, {} as { [key: string]: string });

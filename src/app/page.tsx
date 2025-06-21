@@ -121,7 +121,7 @@ export default function Home() {
         const cardsWithImages = drawnCardsResult.map((card) => ({
           name: card.name,
           reversed: card.reversed,
-          image: cardImageMap[card.name] || '/images/tarot/placeholder.png',
+          image: cardImageMap[card.name],
         }));
 
         setReadingResult({ cards: cardsWithImages, interpretation: interpretationResult.interpretation });
