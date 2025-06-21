@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { suggestTarotSpread, type SuggestTarotSpreadOutput, type SingleSpreadSuggestion } from '@/ai/flows/suggest-tarot-spread';
-import { interpretTarotCards } from '@/ai/flows/interpret-tarot-cards';
+import { interpretTarotCards, InterpretTarotCardsInput } from '@/ai/flows/interpret-tarot-cards';
 import { drawCards } from '@/lib/tarot';
 import { Loader } from '@/components/ui/loader';
 import { TarotCard } from '@/components/tarot-card';
@@ -65,7 +65,7 @@ export default function Home() {
     startTransition(async () => {
       setIsLoading(true);
       try {
-        const totalCardCount = selectedSpread.parts.reduce((sum, part) => sum + part.cardCount, 0);
+        const totalCardCount = selectedSpread.parts.reduce((sum, part) => sum + part.positions.length, 0);
         if (totalCardCount === 0) {
             toast({ title: 'Invalid spread suggestion.', description: 'Card count cannot be zero.', variant: 'destructive' });
             setIsLoading(false);
@@ -74,15 +74,18 @@ export default function Home() {
 
         const drawnCards = await drawCards(totalCardCount);
         
-        const spreadPartsForInterpretation: { label: string; cards: string[] }[] = [];
+        const spreadPartsForInterpretation: InterpretTarotCardsInput['spreadParts'] = [];
         let cardIndex = 0;
         for (const part of selectedSpread.parts) {
-          const cardsForPart = drawnCards.slice(cardIndex, cardIndex + part.cardCount);
+          const cardsWithPositions = part.positions.map((positionLabel, indexInPart) => {
+            const cardName = drawnCards[cardIndex + indexInPart];
+            return { cardName, positionLabel };
+          });
           spreadPartsForInterpretation.push({
             label: part.label,
-            cards: cardsForPart,
+            cards: cardsWithPositions,
           });
-          cardIndex += part.cardCount;
+          cardIndex += part.positions.length;
         }
 
         const interpretationResult = await interpretTarotCards({
@@ -174,11 +177,16 @@ export default function Home() {
                           <p className="text-muted-foreground text-sm">{suggestion.reason}</p>
                         </div>
                       </div>
-                      <div className="pl-8 pt-2 space-y-1 text-sm">
+                      <div className="pl-8 pt-2 space-y-2">
                         {suggestion.parts.map((part, partIndex) => (
-                          <p key={partIndex} className="font-semibold text-foreground">
-                            {part.label} ({part.cardCount} {part.cardCount > 1 ? 'cards' : 'card'})
-                          </p>
+                          <div key={partIndex} className="text-sm">
+                            <p className="font-semibold text-foreground">
+                              {part.label} ({part.positions.length} {part.positions.length > 1 ? 'cards' : 'card'})
+                            </p>
+                            <ul className="list-disc pl-5 mt-1 text-muted-foreground">
+                              {part.positions.map((pos, posIndex) => <li key={posIndex}>{pos}</li>)}
+                            </ul>
+                          </div>
                         ))}
                       </div>
                     </Label>
@@ -212,24 +220,23 @@ export default function Home() {
                   return confirmedSpread.parts.map((part, partIndex) => {
                     const cardsForPart = readingResult.cards.slice(
                       cardDrawnIndex,
-                      cardDrawnIndex + part.cardCount
+                      cardDrawnIndex + part.positions.length
                     );
-                    const startIndexForPart = cardDrawnIndex;
-                    cardDrawnIndex += part.cardCount;
+                    const positionsForPart = part.positions;
+                    cardDrawnIndex += part.positions.length;
 
                     return (
                       <div key={partIndex} className="bg-card/20 backdrop-blur-sm rounded-lg p-4 md:p-6">
                         <h3 className="font-headline text-2xl text-accent text-glow mb-4 text-center">{part.label}</h3>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6 justify-center">
                           {cardsForPart.map((card, indexInPart) => {
-                            const overallIndex = startIndexForPart + indexInPart;
                             return (
                               <TarotCard
                                 key={card}
                                 cardName={card}
                                 isRevealed={true}
-                                animationDelay={`${overallIndex * 0.15}s`}
-                                positionLabel={`Card ${overallIndex + 1}`}
+                                animationDelay={`${(cardDrawnIndex - cardsForPart.length + indexInPart) * 0.15}s`}
+                                positionLabel={positionsForPart[indexInPart]}
                               />
                             );
                           })}

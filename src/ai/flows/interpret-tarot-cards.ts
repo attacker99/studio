@@ -13,9 +13,14 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
+const CardWithPositionSchema = z.object({
+  cardName: z.string().describe("The name of the drawn card."),
+  positionLabel: z.string().describe("The label describing the meaning of this card's position in the spread."),
+});
+
 const SpreadPartWithCardsSchema = z.object({
   label: z.string().describe("The label for this part of the spread, matching what was suggested."),
-  cards: z.array(z.string()).describe("The cards drawn for this part of the spread."),
+  cards: z.array(CardWithPositionSchema).describe("The cards drawn for this part of the spread, each with its position label."),
 });
 
 const InterpretTarotCardsInputSchema = z.object({
@@ -39,15 +44,18 @@ const prompt = ai.definePrompt({
   input: {schema: InterpretTarotCardsInputSchema},
   output: {schema: InterpretTarotCardsOutputSchema},
   prompt: `You are a tarot expert. Given the user's question, the chosen spread, and the drawn cards organized by their position, provide an insightful interpretation.
+It is very important that for each card, you explicitly state its position and then interpret the card's meaning in that specific context. For clarity, please put each card's interpretation on a new line. Start the line with the position label and card name.
 If it is a comparison spread, make sure to compare the two options in your interpretation, helping the user make a decision.
-For each part of the spread, explain what each card means in its position. Please format the interpretation with each position/card and its meaning on a new line for clarity.
 
 Question: {{{question}}}
 Spread Name: {{{spreadName}}}
 
 Cards Drawn:
 {{#each spreadParts}}
-- {{{label}}}: {{#each cards}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}
+### {{{label}}}
+{{#each cards}}
+- {{{positionLabel}}}: {{{cardName}}}
+{{/each}}
 {{/each}}
 
 Interpretation:`,

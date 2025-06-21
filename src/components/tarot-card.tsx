@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -13,7 +14,6 @@ type TarotCardProps = {
 };
 
 export function TarotCard({ cardName, isRevealed, animationDelay = '0s', positionLabel }: TarotCardProps) {
-  const cardSlug = cardName.toLowerCase().replace(/ /g, '-');
   const dataAiHint = cardName.toLowerCase().replace('the ', '').replace('of ', '');
 
   return (
@@ -30,7 +30,7 @@ export function TarotCard({ cardName, isRevealed, animationDelay = '0s', positio
                         <CardContent className="relative flex-grow p-0">
                             <Image
                                 src={`https://placehold.co/250x400.png`}
-                                alt={`The back of a tarot card`}
+                                alt={`An artistic rendering of the ${cardName} tarot card.`}
                                 width={250}
                                 height={400}
                                 className="object-cover w-full h-full"
@@ -39,7 +39,7 @@ export function TarotCard({ cardName, isRevealed, animationDelay = '0s', positio
                         </CardContent>
                         <CardFooter className="p-2 flex-col items-center justify-center bg-background/80 backdrop-blur-sm border-t">
                             <p className="font-headline text-center text-sm leading-tight">{cardName}</p>
-                             {positionLabel && <p className="text-xs text-muted-foreground">{positionLabel}</p>}
+                             {positionLabel && <p className="text-xs text-muted-foreground text-center">{positionLabel}</p>}
                         </CardFooter>
                     </Card>
                 </div>
