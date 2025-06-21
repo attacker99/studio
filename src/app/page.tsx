@@ -229,7 +229,7 @@ export default function Home() {
                     return (
                       <div key={partIndex} className="bg-card/20 backdrop-blur-sm rounded-lg p-4 md:p-6">
                         <h3 className="font-headline text-2xl text-accent text-glow mb-4 text-center">{part.label}</h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6 justify-center">
+                        <div className="flex flex-row flex-wrap gap-4 md:gap-6 justify-center">
                           {cardsForPart.map((card, indexInPart) => {
                             return (
                               <TarotCard

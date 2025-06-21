@@ -17,7 +17,7 @@ export function TarotCard({ cardName, isRevealed, animationDelay = '0s', positio
   const dataAiHint = cardName.toLowerCase().replace('the ', '').replace('of ', '');
 
   return (
-    <div className="w-full aspect-[2/3.5] animate-deal-card" style={{ animationDelay }}>
+    <div className="w-36 md:w-48 aspect-[2/3.5] animate-deal-card" style={{ animationDelay }}>
         <div className={cn('relative w-full h-full perspective', isRevealed && 'card-flipped')}>
             <div className="card-inner">
                 <div className="card-front">
@@ -37,7 +37,7 @@ export function TarotCard({ cardName, isRevealed, animationDelay = '0s', positio
                                 data-ai-hint={dataAiHint}
                             />
                         </CardContent>
-                        <CardFooter className="flex-shrink-0 px-2 py-2 flex-col items-center justify-center bg-background/80 backdrop-blur-sm border-t">
+                        <CardFooter className="flex-shrink-0 px-2 h-20 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm border-t">
                             <p className="font-headline text-center text-sm">{cardName}</p>
                              {positionLabel && <p className="text-xs text-muted-foreground text-center mt-0.5">{positionLabel}</p>}
                         </CardFooter>
