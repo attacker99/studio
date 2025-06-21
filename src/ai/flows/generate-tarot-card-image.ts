@@ -9,7 +9,7 @@ import {z} from 'genkit';
 const GenerateTarotCardImageInputSchema = z.object({
   cardName: z.string().describe("The name of the tarot card to generate, e.g., 'The Fool' or 'Six of Swords'."),
 });
-type GenerateTarotCardImageInput = z.infer<typeof GenerateTarotCardImageInputSchema>;
+export type GenerateTarotCardImageInput = z.infer<typeof GenerateTarotCardImageInputSchema>;
 
 const GenerateTarotCardImageOutputSchema = z.object({
   imageUrl: z.string().describe("The data URI of the generated image. Expected format: 'data:image/png;base64,<encoded_data>'."),
@@ -35,7 +35,8 @@ const generateTarotCardImageFlow = ai.defineFlow(
     The background is a swirling nebula of stars and cosmic dust.
     Do NOT include any text, borders, or card names in the image.
     The artwork must be detailed, symbolic, and high-quality.
-    This image is for a card in a deck called "Degen Tarot Cat".`;
+    This image is for a card in a deck called "Degen Tarot Cat".
+    The final image MUST have a portrait aspect ratio of 25:44. The artwork must fill the entire canvas, leaving no borders or solid-colored background areas.`;
     
     const { media } = await ai.generate({
       model: 'googleai/gemini-2.0-flash-preview-image-generation',
