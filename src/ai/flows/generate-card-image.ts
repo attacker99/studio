@@ -34,7 +34,7 @@ const generateCardImageFlow = ai.defineFlow(
   async ({ cardName }) => {
     const { media } = await ai.generate({
       model: 'googleai/gemini-2.0-flash-preview-image-generation',
-      prompt: `An artistic, visually stunning tarot card illustration of "${cardName}". Mystical, ethereal, detailed, with symbolic elements. The style should be reminiscent of the classic Rider-Waite tarot deck, but with a modern, surreal, and a degen cat-like twist. The name '${cardName}' should be written at the bottom of the card in an elegant font.`,
+      prompt: `An artistic, visually stunning tarot card illustration of "${cardName}". The final image should look like a physical tarot card with clearly visible rounded corners and a consistent border. The card's artwork should be mystical, ethereal, detailed, with symbolic elements, all unified by a dark, cosmic background theme. The style should be reminiscent of the classic Rider-Waite tarot deck, but with a modern, surreal, and a degen cat-like twist. The name '${cardName}' should be written at the bottom of the card in an elegant font.`,
       config: {
         responseModalities: ['TEXT', 'IMAGE'],
       },
