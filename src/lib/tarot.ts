@@ -43,48 +43,31 @@ function fisherYatesShuffle(deck: string[], randomNumbers: number[]): string[] {
 }
 
 /**
- * Draws a specified number of cards from the tarot deck.
- * It attempts to use a true quantum random number source for shuffling.
- * If the quantum source is unavailable, it gracefully falls back to the standard pseudo-random generator.
+ * Draws a specified number of cards from the tarot deck using a true quantum random number source.
+ * This function will fail if the quantum source is unavailable.
  * @param count The number of cards to draw.
  * @returns A promise that resolves to an array of card names.
  */
 export async function drawCards(count: number): Promise<string[]> {
-  try {
-    // Attempt to fetch random numbers from the ANU Quantum Random Number Generator.
-    // We need as many random numbers as there are cards in the deck for a full shuffle.
-    const deckSize = TAROT_DECK.length;
-    const response = await fetch(`https://qrng.anu.edu.au/API/jsonI.php?length=${deckSize}&type=uint16`);
-    if (!response.ok) {
-      throw new Error(`API responded with status: ${response.status}`);
-    }
-    const data = await response.json();
-
-    if (!data.success || !data.data || data.data.length < deckSize) {
-      throw new Error('Invalid or insufficient data from the quantum source.');
-    }
-
-    console.log("Successfully shuffled deck with quantum randomness.");
-    const quantumRandomNumbers = data.data as number[];
-    const shuffledDeck = fisherYatesShuffle(TAROT_DECK, quantumRandomNumbers);
-    return shuffledDeck.slice(0, count);
-
-  } catch (error) {
-    console.warn("Quantum source failed, falling back to standard pseudo-randomness. Error:", error);
-    
-    // Fallback to standard pseudo-random shuffle (Fisher-Yates with Math.random)
-    const shuffledDeck = [...TAROT_DECK];
-    let currentIndex = shuffledDeck.length;
-    let randomIndex;
-
-    while (currentIndex !== 0) {
-      randomIndex = Math.floor(Math.random() * currentIndex);
-      currentIndex--;
-
-      [shuffledDeck[currentIndex], shuffledDeck[randomIndex]] = [
-        shuffledDeck[randomIndex], shuffledDeck[currentIndex]];
-    }
-
-    return shuffledDeck.slice(0, count);
+  // Fetch random numbers from the ANU Quantum Random Number Generator.
+  // We need as many random numbers as there are cards in the deck for a full shuffle.
+  const deckSize = TAROT_DECK.length;
+  const response = await fetch(`https://qrng.anu.edu.au/API/jsonI.php?length=${deckSize}&type=uint16`);
+  
+  if (!response.ok) {
+    console.error(`Quantum API responded with status: ${response.status}`);
+    throw new Error(`Could not connect to the quantum source. The API responded with status: ${response.status}`);
   }
+  
+  const data = await response.json();
+
+  if (!data.success || !data.data || data.data.length < deckSize) {
+    console.error('Invalid or insufficient data from the quantum source.', data);
+    throw new Error('Received invalid or insufficient data from the quantum source.');
+  }
+
+  console.log("Successfully shuffled deck with quantum randomness.");
+  const quantumRandomNumbers = data.data as number[];
+  const shuffledDeck = fisherYatesShuffle(TAROT_DECK, quantumRandomNumbers);
+  return shuffledDeck.slice(0, count);
 }
