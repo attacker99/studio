@@ -15,6 +15,7 @@ import { Logo } from '@/components/logo';
 import { Sparkles } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import ReactMarkdown from 'react-markdown';
 
 type Step = 'question' | 'suggestion' | 'reading';
 
@@ -255,8 +256,8 @@ export default function Home() {
                   </CardTitle>
                    <CardDescription>{confirmedSpread?.suggestedSpread}</CardDescription>
                 </CardHeader>
-                <CardContent className="prose prose-invert max-w-none text-foreground/90 whitespace-pre-wrap font-body text-base">
-                  {readingResult.interpretation}
+                <CardContent className="prose prose-invert max-w-none text-foreground/90 font-body text-base">
+                  <ReactMarkdown>{readingResult.interpretation}</ReactMarkdown>
                 </CardContent>
               </Card>
 
