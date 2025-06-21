@@ -38,14 +38,16 @@ const prompt = ai.definePrompt({
   name: 'interpretTarotCardsPrompt',
   input: {schema: InterpretTarotCardsInputSchema},
   output: {schema: InterpretTarotCardsOutputSchema},
-  prompt: `You are a tarot expert. Given the user's question, the chosen spread, and the drawn cards organized by their position, provide an insightful interpretation. If it is a comparison spread, make sure to compare the two options in your interpretation, helping the user make a decision.
+  prompt: `You are a tarot expert. Given the user's question, the chosen spread, and the drawn cards organized by their position, provide an insightful interpretation.
+If it is a comparison spread, make sure to compare the two options in your interpretation, helping the user make a decision.
+For each part of the spread, explain what each card means in its position. Please format the interpretation with each position/card and its meaning on a new line for clarity.
 
 Question: {{{question}}}
 Spread Name: {{{spreadName}}}
 
 Cards Drawn:
 {{#each spreadParts}}
-- {{{label}}}: {{#each cards}}{{{this}}} {{/each}}
+- {{{label}}}: {{#each cards}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}
 {{/each}}
 
 Interpretation:`,

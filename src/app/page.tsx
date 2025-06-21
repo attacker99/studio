@@ -6,13 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { suggestTarotSpread, type SuggestTarotSpreadOutput } from '@/ai/flows/suggest-tarot-spread';
+import { suggestTarotSpread, type SuggestTarotSpreadOutput, type SingleSpreadSuggestion } from '@/ai/flows/suggest-tarot-spread';
 import { interpretTarotCards } from '@/ai/flows/interpret-tarot-cards';
 import { drawCards } from '@/lib/tarot';
 import { Loader } from '@/components/ui/loader';
 import { TarotCard } from '@/components/tarot-card';
 import { Logo } from '@/components/logo';
 import { Sparkles } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 
 type Step = 'question' | 'suggestion' | 'reading';
 
@@ -20,6 +22,8 @@ export default function Home() {
   const [step, setStep] = useState<Step>('question');
   const [question, setQuestion] = useState('');
   const [spreadSuggestion, setSpreadSuggestion] = useState<SuggestTarotSpreadOutput | null>(null);
+  const [selectedSpreadIndex, setSelectedSpreadIndex] = useState<number | null>(null);
+  const [confirmedSpread, setConfirmedSpread] = useState<SingleSpreadSuggestion | null>(null);
   const [readingResult, setReadingResult] = useState<{ cards: string[]; interpretation: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -45,15 +49,23 @@ export default function Home() {
   };
 
   const handleSpreadConfirm = () => {
-    if (!spreadSuggestion || !spreadSuggestion.parts?.length) {
+    if (selectedSpreadIndex === null || !spreadSuggestion) {
+      toast({ title: 'Please select a spread.', variant: 'destructive' });
+      return;
+    }
+    const selectedSpread = spreadSuggestion.suggestions[selectedSpreadIndex];
+
+    if (!selectedSpread || !selectedSpread.parts?.length) {
       toast({ title: 'Invalid spread suggestion.', description: 'Could not determine the cards to draw.', variant: 'destructive' });
       return;
     };
     
+    setConfirmedSpread(selectedSpread);
+
     startTransition(async () => {
       setIsLoading(true);
       try {
-        const totalCardCount = spreadSuggestion.parts.reduce((sum, part) => sum + part.cardCount, 0);
+        const totalCardCount = selectedSpread.parts.reduce((sum, part) => sum + part.cardCount, 0);
         if (totalCardCount === 0) {
             toast({ title: 'Invalid spread suggestion.', description: 'Card count cannot be zero.', variant: 'destructive' });
             setIsLoading(false);
@@ -64,7 +76,7 @@ export default function Home() {
         
         const spreadPartsForInterpretation: { label: string; cards: string[] }[] = [];
         let cardIndex = 0;
-        for (const part of spreadSuggestion.parts) {
+        for (const part of selectedSpread.parts) {
           const cardsForPart = drawnCards.slice(cardIndex, cardIndex + part.cardCount);
           spreadPartsForInterpretation.push({
             label: part.label,
@@ -75,7 +87,7 @@ export default function Home() {
 
         const interpretationResult = await interpretTarotCards({
           question,
-          spreadName: spreadSuggestion.suggestedSpread,
+          spreadName: selectedSpread.suggestedSpread,
           spreadParts: spreadPartsForInterpretation,
         });
 
@@ -96,6 +108,8 @@ export default function Home() {
     setQuestion('');
     setSpreadSuggestion(null);
     setReadingResult(null);
+    setSelectedSpreadIndex(null);
+    setConfirmedSpread(null);
   };
 
   const renderContent = () => {
@@ -138,22 +152,40 @@ export default function Home() {
           spreadSuggestion && (
             <Card className="w-full max-w-2xl animate-deal-card bg-card/70 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle className="font-headline text-3xl">Suggested Spread</CardTitle>
+                <CardTitle className="font-headline text-3xl">Suggested Spreads</CardTitle>
+                <CardDescription>Choose the spread that resonates most with you.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="space-y-2 rounded-lg border bg-muted/50 p-4">
-                  <h3 className="font-headline text-2xl text-accent text-glow">{spreadSuggestion.suggestedSpread}</h3>
-                  <p className="text-muted-foreground">{spreadSuggestion.reason}</p>
-                   <div className="pt-2 space-y-1">
-                    {spreadSuggestion.parts.map((part, index) => (
-                      <p key={index} className="font-semibold text-foreground">
-                        {part.label} ({part.cardCount} {part.cardCount > 1 ? 'cards' : 'card'})
-                      </p>
-                    ))}
-                  </div>
-                </div>
+                 <RadioGroup
+                  value={selectedSpreadIndex?.toString()}
+                  onValueChange={(value) => setSelectedSpreadIndex(Number(value))}
+                  className="space-y-4"
+                >
+                  {spreadSuggestion.suggestions.map((suggestion, index) => (
+                    <Label
+                      key={index}
+                      htmlFor={`spread-${index}`}
+                      className="flex flex-col gap-2 rounded-lg border bg-muted/50 p-4 has-[:checked]:bg-accent/20 has-[:checked]:border-accent cursor-pointer"
+                    >
+                      <div className="flex items-center gap-4">
+                        <RadioGroupItem value={index.toString()} id={`spread-${index}`} />
+                        <div className="flex-grow">
+                          <h3 className="font-headline text-xl text-accent text-glow">{suggestion.suggestedSpread}</h3>
+                          <p className="text-muted-foreground text-sm">{suggestion.reason}</p>
+                        </div>
+                      </div>
+                      <div className="pl-8 pt-2 space-y-1 text-sm">
+                        {suggestion.parts.map((part, partIndex) => (
+                          <p key={partIndex} className="font-semibold text-foreground">
+                            {part.label} ({part.cardCount} {part.cardCount > 1 ? 'cards' : 'card'})
+                          </p>
+                        ))}
+                      </div>
+                    </Label>
+                  ))}
+                </RadioGroup>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Button onClick={handleSpreadConfirm} size="lg" className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground font-bold">
+                  <Button onClick={handleSpreadConfirm} size="lg" className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground font-bold" disabled={selectedSpreadIndex === null}>
                     Confirm & Draw Cards
                   </Button>
                   <Button onClick={handleReset} size="lg" variant="outline" className="flex-1">
@@ -167,7 +199,7 @@ export default function Home() {
 
       case 'reading':
         return (
-          readingResult && spreadSuggestion && (
+          readingResult && confirmedSpread && (
             <div className="w-full max-w-6xl space-y-8 animate-deal-card">
               <div className="text-center">
                 <h2 className="font-headline text-3xl md:text-4xl">Your Reading</h2>
@@ -177,7 +209,7 @@ export default function Home() {
               <div className="space-y-6">
                 {(() => {
                   let cardDrawnIndex = 0;
-                  return spreadSuggestion.parts.map((part, partIndex) => {
+                  return confirmedSpread.parts.map((part, partIndex) => {
                     const cardsForPart = readingResult.cards.slice(
                       cardDrawnIndex,
                       cardDrawnIndex + part.cardCount
@@ -214,7 +246,7 @@ export default function Home() {
                     <Sparkles className="text-accent"/>
                     Interpretation
                   </CardTitle>
-                   <CardDescription>{spreadSuggestion?.suggestedSpread}</CardDescription>
+                   <CardDescription>{confirmedSpread?.suggestedSpread}</CardDescription>
                 </CardHeader>
                 <CardContent className="prose prose-invert max-w-none text-foreground/90 whitespace-pre-wrap font-body text-base">
                   {readingResult.interpretation}
