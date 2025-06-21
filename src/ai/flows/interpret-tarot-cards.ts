@@ -12,10 +12,15 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
+const SpreadPartWithCardsSchema = z.object({
+  label: z.string().describe("The label for this part of the spread, matching what was suggested."),
+  cards: z.array(z.string()).describe("The cards drawn for this part of the spread."),
+});
+
 const InterpretTarotCardsInputSchema = z.object({
   question: z.string().describe('The user-provided question for the tarot reading.'),
   spreadName: z.string().describe('The name of the chosen tarot spread.'),
-  cards: z.array(z.string()).describe('An array of the drawn tarot cards.'),
+  spreadParts: z.array(SpreadPartWithCardsSchema).describe("An array of the cards drawn, organized by their part in the spread."),
 });
 export type InterpretTarotCardsInput = z.infer<typeof InterpretTarotCardsInputSchema>;
 
@@ -32,11 +37,15 @@ const prompt = ai.definePrompt({
   name: 'interpretTarotCardsPrompt',
   input: {schema: InterpretTarotCardsInputSchema},
   output: {schema: InterpretTarotCardsOutputSchema},
-  prompt: `You are a tarot expert. Given the user's question, the chosen spread, and the drawn cards, provide an insightful interpretation.
+  prompt: `You are a tarot expert. Given the user's question, the chosen spread, and the drawn cards organized by their position, provide an insightful interpretation. If it is a comparison spread, make sure to compare the two options in your interpretation, helping the user make a decision.
 
 Question: {{{question}}}
 Spread Name: {{{spreadName}}}
-Cards: {{#each cards}}{{{this}}} {{/each}}
+
+Cards Drawn:
+{{#each spreadParts}}
+- {{{label}}}: {{#each cards}}{{{this}}} {{/each}}
+{{/each}}
 
 Interpretation:`,
 });

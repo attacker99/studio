@@ -44,21 +44,38 @@ export default function Home() {
   };
 
   const handleSpreadConfirm = () => {
-    if (!spreadSuggestion || !spreadSuggestion.cardCount) {
-      toast({ title: 'Invalid spread suggestion.', description: 'Could not determine the number of cards to draw.', variant: 'destructive' });
+    if (!spreadSuggestion || !spreadSuggestion.parts?.length) {
+      toast({ title: 'Invalid spread suggestion.', description: 'Could not determine the cards to draw.', variant: 'destructive' });
       return;
     };
     
     startTransition(async () => {
       setIsLoading(true);
       try {
-        const cardCount = spreadSuggestion.cardCount;
-        const drawnCards = await drawCards(cardCount);
+        const totalCardCount = spreadSuggestion.parts.reduce((sum, part) => sum + part.cardCount, 0);
+        if (totalCardCount === 0) {
+            toast({ title: 'Invalid spread suggestion.', description: 'Card count cannot be zero.', variant: 'destructive' });
+            setIsLoading(false);
+            return;
+        }
+
+        const drawnCards = await drawCards(totalCardCount);
         
+        const spreadPartsForInterpretation: { label: string; cards: string[] }[] = [];
+        let cardIndex = 0;
+        for (const part of spreadSuggestion.parts) {
+          const cardsForPart = drawnCards.slice(cardIndex, cardIndex + part.cardCount);
+          spreadPartsForInterpretation.push({
+            label: part.label,
+            cards: cardsForPart,
+          });
+          cardIndex += part.cardCount;
+        }
+
         const interpretationResult = await interpretTarotCards({
           question,
           spreadName: spreadSuggestion.suggestedSpread,
-          cards: drawnCards,
+          spreadParts: spreadPartsForInterpretation,
         });
 
         setReadingResult({ cards: drawnCards, interpretation: interpretationResult.interpretation });
@@ -96,7 +113,7 @@ export default function Home() {
             <CardContent>
               <div className="grid w-full gap-4">
                 <Textarea
-                  placeholder="Type your question here..."
+                  placeholder="Type your question here... for example 'Should I move to a new city or stay where I am?'"
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
                   rows={4}
@@ -124,8 +141,15 @@ export default function Home() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2 rounded-lg border bg-muted/50 p-4">
-                  <h3 className="font-headline text-2xl text-accent text-glow">{spreadSuggestion.suggestedSpread} ({spreadSuggestion.cardCount} cards)</h3>
+                  <h3 className="font-headline text-2xl text-accent text-glow">{spreadSuggestion.suggestedSpread}</h3>
                   <p className="text-muted-foreground">{spreadSuggestion.reason}</p>
+                   <div className="pt-2 space-y-1">
+                    {spreadSuggestion.parts.map((part, index) => (
+                      <p key={index} className="font-semibold text-foreground">
+                        {part.label} ({part.cardCount} {part.cardCount > 1 ? 'cards' : 'card'})
+                      </p>
+                    ))}
+                  </div>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Button onClick={handleSpreadConfirm} size="lg" className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground font-bold">
@@ -142,23 +166,45 @@ export default function Home() {
 
       case 'reading':
         return (
-          readingResult && (
+          readingResult && spreadSuggestion && (
             <div className="w-full max-w-6xl space-y-8 animate-deal-card">
               <div className="text-center">
                 <h2 className="font-headline text-3xl md:text-4xl">Your Reading</h2>
                 <p className="text-muted-foreground max-w-2xl mx-auto">&quot;{question}&quot;</p>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6 justify-center">
-                {readingResult.cards.map((card, index) => (
-                  <TarotCard
-                    key={card}
-                    cardName={card}
-                    isRevealed={true}
-                    animationDelay={`${index * 0.2}s`}
-                    positionLabel={`Card ${index + 1}`}
-                  />
-                ))}
+              <div className="space-y-6">
+                {(() => {
+                  let cardDrawnIndex = 0;
+                  return spreadSuggestion.parts.map((part, partIndex) => {
+                    const cardsForPart = readingResult.cards.slice(
+                      cardDrawnIndex,
+                      cardDrawnIndex + part.cardCount
+                    );
+                    const startIndexForPart = cardDrawnIndex;
+                    cardDrawnIndex += part.cardCount;
+
+                    return (
+                      <div key={partIndex} className="bg-card/20 backdrop-blur-sm rounded-lg p-4 md:p-6">
+                        <h3 className="font-headline text-2xl text-accent text-glow mb-4 text-center">{part.label}</h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6 justify-center">
+                          {cardsForPart.map((card, indexInPart) => {
+                            const overallIndex = startIndexForPart + indexInPart;
+                            return (
+                              <TarotCard
+                                key={card}
+                                cardName={card}
+                                isRevealed={true}
+                                animationDelay={`${overallIndex * 0.15}s`}
+                                positionLabel={`Card ${overallIndex + 1}`}
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
 
               <Card className="bg-card/70 backdrop-blur-sm">
