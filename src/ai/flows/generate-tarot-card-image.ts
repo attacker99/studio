@@ -6,12 +6,12 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const GenerateTarotCardImageInputSchema = z.object({
+const GenerateTarotCardImageInputSchema = z.object({
   cardName: z.string().describe("The name of the tarot card to generate, e.g., 'The Fool' or 'Six of Swords'."),
 });
 export type GenerateTarotCardImageInput = z.infer<typeof GenerateTarotCardImageInputSchema>;
 
-export const GenerateTarotCardImageOutputSchema = z.object({
+const GenerateTarotCardImageOutputSchema = z.object({
   imageUrl: z.string().describe("The data URI of the generated image. Expected format: 'data:image/png;base64,<encoded_data>'."),
   promptUsed: z.string().describe("The exact prompt that was used to generate this image."),
 });
