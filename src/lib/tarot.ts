@@ -1,0 +1,41 @@
+export const TAROT_DECK = [
+  'The Fool', 'The Magician', 'The High Priestess', 'The Empress', 'The Emperor',
+  'The Hierophant', 'The Lovers', 'The Chariot', 'Strength', 'The Hermit',
+  'Wheel of Fortune', 'Justice', 'The Hanged Man', 'Death', 'Temperance',
+  'The Devil', 'The Tower', 'The Star', 'The Moon', 'The Sun', 'Judgement', 'The World',
+  'Ace of Wands', 'Two of Wands', 'Three of Wands', 'Four of Wands', 'Five of Wands',
+  'Six of Wands', 'Seven of Wands', 'Eight of Wands', 'Nine of Wands', 'Ten of Wands',
+  'Page of Wands', 'Knight of Wands', 'Queen of Wands', 'King of Wands',
+  'Ace of Cups', 'Two of Cups', 'Three of Cups', 'Four of Cups', 'Five of Cups',
+  'Six of Cups', 'Seven of Cups', 'Eight of Cups', 'Nine of Cups', 'Ten of Cups',
+  'Page of Cups', 'Knight of Cups', 'Queen of Cups', 'King of Cups',
+  'Ace of Swords', 'Two of Swords', 'Three of Swords', 'Four of Swords', 'Five of Swords',
+  'Six of Swords', 'Seven of Swords', 'Eight of Swords', 'Nine of Swords', 'Ten of Swords',
+  'Page of Swords', 'Knight of Swords', 'Queen of Swords', 'King of Swords',
+  'Ace of Pentacles', 'Two of Pentacles', 'Three of Pentacles', 'Four of Pentacles', 'Five of Pentacles',
+  'Six of Pentacles', 'Seven of Pentacles', 'Eight of Pentacles', 'Nine of Pentacles', 'Ten of Pentacles',
+  'Page of Pentacles', 'Knight of Pentacles', 'Queen of Pentacles', 'King of Pentacles'
+];
+
+const SPREAD_CONFIG: { [key: string]: number } = {
+  'three card spread': 3,
+  'celtic cross': 10,
+  'relationship spread': 5,
+  'past, present, future': 3,
+};
+
+export function getSpreadCardCount(spreadName: string): number {
+  const normalizedName = spreadName.toLowerCase().replace(/ spread$/i, '').trim();
+  for (const key in SPREAD_CONFIG) {
+    if (key.includes(normalizedName)) {
+      return SPREAD_CONFIG[key];
+    }
+  }
+  return 3; // Default to a 3-card spread if no match is found
+}
+
+export function drawCards(count: number): string[] {
+  // Simple shuffle and slice. In a real quantum app, this would be an API call.
+  const shuffled = [...TAROT_DECK].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, count);
+}
