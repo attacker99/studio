@@ -1,84 +1,58 @@
-// This file contains the pre-generated images for the tarot cards.
-// In a real application, you would replace these placeholder URLs
-// with your actual, pre-generated card images.
-// You can use the Image Generator tool at /admin/image-generator to create them.
-export const cardImageMap: { [key: string]: string } = {
-  'The Fool': 'https://placehold.co/250x440.png',
-  'The Magician': 'https://placehold.co/250x440.png',
-  'The High Priestess': 'https://placehold.co/250x440.png',
-  'The Empress': 'https://placehold.co/250x440.png',
-  'The Emperor': 'https://placehold.co/250x440.png',
-  'The Hierophant': 'https://placehold.co/250x440.png',
-  'The Lovers': 'https://placehold.co/250x440.png',
-  'The Chariot': 'https://placehold.co/250x440.png',
-  'Strength': 'https://placehold.co/250x440.png',
-  'The Hermit': 'https://placehold.co/250x440.png',
-  'Wheel of Fortune': 'https://placehold.co/250x440.png',
-  'Justice': 'https://placehold.co/250x440.png',
-  'The Hanged Man': 'https://placehold.co/250x440.png',
-  'Death': 'https://placehold.co/250x440.png',
-  'Temperance': 'https://placehold.co/250x440.png',
-  'The Devil': 'https://placehold.co/250x440.png',
-  'The Tower': 'https://placehold.co/250x440.png',
-  'The Star': 'https://placehold.co/250x440.png',
-  'The Moon': 'https://placehold.co/250x440.png',
-  'The Sun': 'https://placehold.co/250x440.png',
-  'Judgement': 'https://placehold.co/250x440.png',
-  'The World': 'https://placehold.co/250x440.png',
-  'Ace of Wands': 'https://placehold.co/250x440.png',
-  'Two of Wands': 'https://placehold.co/250x440.png',
-  'Three of Wands': 'https://placehold.co/250x440.png',
-  'Four of Wands': 'https://placehold.co/250x440.png',
-  'Five of Wands': 'https://placehold.co/250x440.png',
-  'Six of Wands': 'https://placehold.co/250x440.png',
-  'Seven of Wands': 'https://placehold.co/250x440.png',
-  'Eight of Wands': 'https://placehold.co/250x440.png',
-  'Nine of Wands': 'https://placehold.co/250x440.png',
-  'Ten of Wands': 'https://placehold.co/250x440.png',
-  'Page of Wands': 'https://placehold.co/250x440.png',
-  'Knight of Wands': 'https://placehold.co/250x440.png',
-  'Queen of Wands': 'https://placehold.co/250x440.png',
-  'King of Wands': 'https://placehold.co/250x440.png',
-  'Ace of Cups': 'https://placehold.co/250x440.png',
-  'Two of Cups': 'https://placehold.co/250x440.png',
-  'Three of Cups': 'https://placehold.co/250x440.png',
-  'Four of Cups': 'https://placehold.co/250x440.png',
-  'Five of Cups': 'https://placehold.co/250x440.png',
-  'Six of Cups': 'https://placehold.co/250x440.png',
-  'Seven of Cups': 'https://placehold.co/250x440.png',
-  'Eight of Cups': 'https://placehold.co/250x440.png',
-  'Nine of Cups': 'https://placehold.co/250x440.png',
-  'Ten of Cups': 'https://placehold.co/250x440.png',
-  'Page of Cups': 'https://placehold.co/250x440.png',
-  'Knight of Cups': 'https://placehold.co/250x440.png',
-  'Queen of Cups': 'https://placehold.co/250x440.png',
-  'King of Cups': 'https://placehold.co/250x440.png',
-  'Ace of Swords': 'https://placehold.co/250x440.png',
-  'Two of Swords': 'https://placehold.co/250x440.png',
-  'Three of Swords': 'https://placehold.co/250x440.png',
-  'Four of Swords': 'https://placehold.co/250x440.png',
-  'Five of Swords': 'https://placehold.co/250x440.png',
-  'Six of Swords': 'https://placehold.co/250x440.png',
-  'Seven of Swords': 'https://placehold.co/250x440.png',
-  'Eight of Swords': 'https://placehold.co/250x440.png',
-  'Nine of Swords': 'https://placehold.co/250x440.png',
-  'Ten of Swords': 'https://placehold.co/250x440.png',
-  'Page of Swords': 'https://placehold.co/250x440.png',
-  'Knight of Swords': 'https://placehold.co/250x440.png',
-  'Queen of Swords': 'https://placehold.co/250x440.png',
-  'King of Swords': 'https://placehold.co/250x440.png',
-  'Ace of Pentacles': 'https://placehold.co/250x440.png',
-  'Two of Pentacles': 'https://placehold.co/250x440.png',
-  'Three of Pentacles': 'https://placehold.co/250x440.png',
-  'Four of Pentacles': 'https://placehold.co/250x440.png',
-  'Five of Pentacles': 'https://placehold.co/250x440.png',
-  'Six of Pentacles': 'https://placehold.co/250x440.png',
-  'Seven of Pentacles': 'https://placehold.co/250x440.png',
-  'Eight of Pentacles': 'https://placehold.co/250x440.png',
-  'Nine of Pentacles': 'https://placehold.co/250x440.png',
-  'Ten of Pentacles': 'https://placehold.co/250x440.png',
-  'Page of Pentacles': 'https://placehold.co/250x440.png',
-  'Knight of Pentacles': 'https://placehold.co/250x440.png',
-  'Queen of Pentacles': 'https://placehold.co/250x440.png',
-  'King of Pentacles': 'https://placehold.co/250x440.png',
-};
+// This file contains the paths to the pre-generated images for the tarot cards.
+// The images themselves should be placed in the public/images/tarot/ folder.
+
+function slugify(text: string): string {
+  return text
+    .toString()
+    .toLowerCase()
+    .replace(/\s+/g, '-') // Replace spaces with -
+    .replace(/[^\w\-]+/g, '') // Remove all non-word chars
+    .replace(/\-\-+/g, '-') // Replace multiple - with single -
+    .replace(/^-+/, '') // Trim - from start of text
+    .replace(/-+$/, ''); // Trim - from end of text
+}
+
+const cardNames = [
+  'The Fool', 'The Magician', 'The High Priestess', 'The Empress', 'The Emperor',
+  'The Hierophant', 'The Lovers', 'The Chariot', 'Strength', 'The Hermit',
+  'Wheel of Fortune', 'Justice', 'The Hanged Man', 'Death', 'Temperance',
+  'The Devil', 'The Tower', 'The Star', 'The Moon', 'The Sun', 'Judgement', 'The World',
+  'Ace of Wands', 'Two of Wands', 'Three of Wands', 'Four of Wands', 'Five of Wands',
+  'Six of Wands', 'Seven of Wands', 'Eight of Wands', 'Nine of Wands', 'Ten of Wands',
+  'Page of Wands', 'Knight of Wands', 'Queen of Wands', 'King of Wands',
+  'Ace of Cups', 'Two of Cups', 'Three of Cups', 'Four of Cups', 'Five of Cups',
+  'Six of Cups', 'Seven of Cups', 'Eight of Cups', 'Nine of Cups', 'Ten of Cups',
+  'Page of Cups', 'Knight of Cups', 'Queen of Cups', 'King of Cups',
+  'Ace of Swords', 'Two of Swords', 'Three of Swords', 'Four of Swords', 'Five of Swords',
+  'Six of Swords', 'Seven of Swords', 'Eight of Swords', 'Nine of Swords', 'Ten of Swords',
+  'Page of Swords', 'Knight of Swords', 'Queen of Swords', 'King of Swords',
+  'Ace of Pentacles', 'Two of Pentacles', 'Three of Pentacles', 'Four of Pentacles', 'Five of Pentacles',
+  'Six of Pentacles', 'Seven of Pentacles', 'Eight of Pentacles', 'Nine of Pentacles', 'Ten of Pentacles',
+  'Page of Pentacles', 'Knight of Pentacles', 'Queen of Pentacles', 'King of Pentacles'
+];
+
+// In a real app, you would have actual images here. We'll use a single placeholder.
+// To add your own images, place them in `public/images/tarot/` and ensure the filenames match the slugified card names.
+// For example, 'The Fool' becomes 'the-fool.png'.
+const placeholderImage = '/images/tarot/placeholder.png';
+
+export const cardImageMap: { [key: string]: string } = cardNames.reduce((acc, cardName) => {
+  // To use unique images, you would generate them and use the slugified name:
+  // acc[cardName] = `/images/tarot/${slugify(cardName)}.png`;
+  // For now, we use one placeholder for all.
+  acc[cardName] = placeholderImage;
+  return acc;
+}, {} as { [key: string]: string });
+
+
+// This creates an object like:
+// {
+//   'The Fool': '/images/tarot/the-fool.png',
+//   'The Magician': '/images/tarot/the-magician.png',
+//   ...
+// }
+// For now, we will point all of them to a single placeholder you can replace.
+export const realCardImageMap: { [key: string]: string } = cardNames.reduce((acc, cardName) => {
+  acc[cardName] = `/images/tarot/${slugify(cardName)}.png`;
+  return acc;
+}, {} as { [key: string]: string });
