@@ -43,8 +43,25 @@ function fisherYatesShuffle(deck: string[], randomNumbers: number[]): string[] {
 }
 
 /**
- * Draws a specified number of cards from the tarot deck using a true quantum random number source.
- * This function will fail if the quantum source is unavailable.
+ * Shuffles the deck using the standard Fisher-Yates algorithm with Math.random().
+ * This is used as a fallback if the quantum source is unavailable.
+ * @param deck The deck to shuffle.
+ * @returns The shuffled deck.
+ */
+function standardShuffle(deck: string[]): string[] {
+    const shuffledDeck = [...deck];
+    for (let i = shuffledDeck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffledDeck[i], shuffledDeck[j]] = [shuffledDeck[j], shuffledDeck[i]];
+    }
+    return shuffledDeck;
+}
+
+
+/**
+ * Draws a specified number of cards from the tarot deck.
+ * It first attempts to use a true quantum random number source. If that fails,
+ * it falls back to a standard pseudo-random shuffle to ensure the app remains functional.
  * @param count The number of cards to draw.
  * @returns A promise that resolves to an array of card names.
  */
@@ -54,19 +71,16 @@ export async function drawCards(count: number): Promise<string[]> {
   const url = `https://qrng.anu.edu.au/API/jsonI.php?length=${deckSize}&type=uint16`;
 
   try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(5000) }); // 5 second timeout
+    const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Quantum API responded with status ${response.status}: ${errorText}`);
-      throw new Error(`The quantum source is available but returned an error (status: ${response.status}). Please try again later.`);
+        throw new Error(`Quantum API responded with status ${response.status}`);
     }
-    
+
     const data = await response.json();
 
     if (!data.success || !data.data || data.data.length < deckSize) {
-      console.error('Invalid or insufficient data from the quantum source.', data);
-      throw new Error('The quantum source returned invalid or incomplete data. Please try again.');
+      throw new Error('Invalid or insufficient data from the quantum source.');
     }
 
     console.log("Successfully shuffled deck with quantum randomness from ANU.");
@@ -75,12 +89,8 @@ export async function drawCards(count: number): Promise<string[]> {
     return shuffledDeck.slice(0, count);
 
   } catch (error) {
-    if (error instanceof Error && error.name === 'TimeoutError') {
-        console.error('Request to quantum source timed out:', error);
-        throw new Error('Connection to the quantum source timed out. The service may be slow or down. Please try again later.');
-    }
-    console.error('Failed to fetch from quantum source:', error);
-    // This catches network errors (e.g. DNS, firewall blocks, CORS)
-    throw new Error('Could not connect to the quantum source. This may be due to a network issue or a firewall blocking the request.');
+    console.warn("Could not connect to quantum source. Falling back to standard shuffle.", error);
+    const shuffledDeck = standardShuffle(TAROT_DECK);
+    return shuffledDeck.slice(0, count);
   }
 }
