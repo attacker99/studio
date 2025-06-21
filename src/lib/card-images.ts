@@ -34,7 +34,7 @@ const cardNames = [
 // In a real app, you would have actual images here. We'll use a single placeholder.
 // To add your own images, place them in `public/images/tarot/` and ensure the filenames match the slugified card names.
 // For example, 'The Fool' becomes 'the-fool.png'.
-const placeholderImage = '/images/tarot/placeholder.png';
+const placeholderImage = 'https://placehold.co/250x440.png';
 
 export const cardImageMap: { [key: string]: string } = cardNames.reduce((acc, cardName) => {
   // To use unique images, you would generate them and use the slugified name:
