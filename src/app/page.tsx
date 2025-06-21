@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { suggestTarotSpread, type SuggestTarotSpreadOutput, type SingleSpreadSuggestion } from '@/ai/flows/suggest-tarot-spread';
 import { interpretTarotCards, InterpretTarotCardsInput } from '@/ai/flows/interpret-tarot-cards';
+import { generateCardImage } from '@/ai/flows/generate-card-image';
 import { drawCards } from '@/lib/tarot';
 import { Loader } from '@/components/ui/loader';
 import { TarotCard } from '@/components/tarot-card';
@@ -18,6 +19,7 @@ import { Label } from '@/components/ui/label';
 import ReactMarkdown from 'react-markdown';
 
 type Step = 'question' | 'suggestion' | 'reading';
+type CardWithImage = { name: string; image: string };
 
 export default function Home() {
   const [step, setStep] = useState<Step>('question');
@@ -25,8 +27,9 @@ export default function Home() {
   const [spreadSuggestion, setSpreadSuggestion] = useState<SuggestTarotSpreadOutput | null>(null);
   const [selectedSpreadIndex, setSelectedSpreadIndex] = useState<number | null>(null);
   const [confirmedSpread, setConfirmedSpread] = useState<SingleSpreadSuggestion | null>(null);
-  const [readingResult, setReadingResult] = useState<{ cards: string[]; interpretation: string } | null>(null);
+  const [readingResult, setReadingResult] = useState<{ cards: CardWithImage[]; interpretation: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
   const [isPending, startTransition] = useTransition();
 
   const { toast } = useToast();
@@ -37,6 +40,7 @@ export default function Home() {
       return;
     }
     setIsLoading(true);
+    setLoadingMessage("The void kitty is pondering your question...");
     try {
       const suggestion = await suggestTarotSpread({ question });
       setSpreadSuggestion(suggestion);
@@ -65,6 +69,7 @@ export default function Home() {
 
     startTransition(async () => {
       setIsLoading(true);
+      setLoadingMessage("Drawing cards, conjuring visions... it's giving... patience.");
       try {
         const totalCardCount = selectedSpread.parts.reduce((sum, part) => sum + part.positions.length, 0);
         if (totalCardCount === 0) {
@@ -89,13 +94,25 @@ export default function Home() {
           cardIndex += part.positions.length;
         }
 
-        const interpretationResult = await interpretTarotCards({
+        const interpretationPromise = interpretTarotCards({
           question,
           spreadName: selectedSpread.suggestedSpread,
           spreadParts: spreadPartsForInterpretation,
         });
+        
+        const imagePromises = drawnCards.map((cardName) => generateCardImage({ cardName }));
 
-        setReadingResult({ cards: drawnCards, interpretation: interpretationResult.interpretation });
+        const [interpretationResult, imageResults] = await Promise.all([
+          interpretationPromise,
+          Promise.all(imagePromises),
+        ]);
+
+        const cardsWithImages = drawnCards.map((name, i) => ({
+          name,
+          image: imageResults[i].imageDataUri,
+        }));
+
+        setReadingResult({ cards: cardsWithImages, interpretation: interpretationResult.interpretation });
         setStep('reading');
       } catch (error) {
         console.error(error);
@@ -103,6 +120,7 @@ export default function Home() {
         toast({ title: 'Failed to complete reading.', description: errorMessage, variant: 'destructive' });
       } finally {
         setIsLoading(false);
+        setLoadingMessage('');
       }
     });
   };
@@ -114,11 +132,12 @@ export default function Home() {
     setReadingResult(null);
     setSelectedSpreadIndex(null);
     setConfirmedSpread(null);
+    setLoadingMessage('');
   };
 
   const renderContent = () => {
     if (isLoading) {
-      return <Loader />;
+      return <Loader message={loadingMessage} />;
     }
 
     switch (step) {
@@ -233,8 +252,9 @@ export default function Home() {
                           {cardsForPart.map((card, indexInPart) => {
                             return (
                               <TarotCard
-                                key={card}
-                                cardName={card}
+                                key={card.name}
+                                cardName={card.name}
+                                imageUrl={card.image}
                                 isRevealed={true}
                                 animationDelay={`${(cardDrawnIndex - cardsForPart.length + indexInPart) * 0.15}s`}
                                 positionLabel={positionsForPart[indexInPart]}

@@ -8,16 +8,15 @@ import { Logo } from './logo';
 
 type TarotCardProps = {
   cardName: string;
+  imageUrl: string;
   isRevealed: boolean;
   animationDelay?: string;
   positionLabel?: string;
 };
 
-export function TarotCard({ cardName, isRevealed, animationDelay = '0s', positionLabel }: TarotCardProps) {
-  const dataAiHint = cardName.toLowerCase().replace('the ', '').replace('of ', '');
-
+export function TarotCard({ cardName, imageUrl, isRevealed, animationDelay = '0s', positionLabel }: TarotCardProps) {
   return (
-    <div className="w-36 md:w-48 aspect-[2/3.5] animate-deal-card" style={{ animationDelay }}>
+    <div className="w-36 md:w-48 aspect-[2/3.5] animate-deal-card flex-shrink-0" style={{ animationDelay }}>
         <div className={cn('relative w-full h-full perspective', isRevealed && 'card-flipped')}>
             <div className="card-inner">
                 <div className="card-front">
@@ -29,15 +28,16 @@ export function TarotCard({ cardName, isRevealed, animationDelay = '0s', positio
                     <Card className="w-full h-full overflow-hidden flex flex-col">
                         <CardContent className="relative flex-grow p-0 min-h-0">
                             <Image
-                                src={`https://placehold.co/250x400.png`}
+                                src={imageUrl}
                                 alt={`An artistic rendering of the ${cardName} tarot card.`}
                                 width={250}
                                 height={400}
                                 className="object-cover w-full h-full"
-                                data-ai-hint={dataAiHint}
+                                unoptimized
+                                priority
                             />
                         </CardContent>
-                        <CardFooter className="flex-shrink-0 px-2 h-20 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm border-t">
+                        <CardFooter className="flex-shrink-0 p-2 h-auto min-h-[5rem] flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm border-t">
                             <p className="font-headline text-center text-sm">{cardName}</p>
                              {positionLabel && <p className="text-xs text-muted-foreground text-center mt-0.5">{positionLabel}</p>}
                         </CardFooter>
