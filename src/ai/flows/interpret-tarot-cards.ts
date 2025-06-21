@@ -43,10 +43,14 @@ const prompt = ai.definePrompt({
   name: 'interpretTarotCardsPrompt',
   input: {schema: InterpretTarotCardsInputSchema},
   output: {schema: InterpretTarotCardsOutputSchema},
-  prompt: `You are a tarot expert. Given the user's question, the chosen spread, and the drawn cards organized by their position, provide an insightful interpretation.
-It is very important that for each card, you explicitly state its position and then interpret the card's meaning in that specific context. For clarity, please put each card's interpretation on a new line. Start the line with the position label and card name.
-If it is a comparison spread, make sure to compare the two options in your interpretation, helping the user make a decision.
+  prompt: `You are a tarot expert. Your task is to interpret a tarot reading based on the user's question, the chosen spread, and the drawn cards.
 
+Here are your instructions:
+1.  Start your interpretation by mentioning the name of the spread. For example: "This is your reading for the '{{{spreadName}}}'."
+2.  For each card drawn, you must state its position first (e.g., 'The Past'), then interpret the card's meaning within that specific context. Present each card's interpretation on a new line, starting with the position and card name.
+3.  If it is a comparison spread, make sure your interpretation clearly compares the two options to help the user with their decision.
+
+Reading Details:
 Question: {{{question}}}
 Spread Name: {{{spreadName}}}
 
