@@ -9,7 +9,7 @@ import {z} from 'genkit';
 const GenerateTarotCardImageInputSchema = z.object({
   cardName: z.string().describe("The name of the tarot card to generate, e.g., 'The Fool' or 'Six of Swords'."),
 });
-export type GenerateTarotCardImageInput = z.infer<typeof GenerateTarotCardImageInputSchema>;
+type GenerateTarotCardImageInput = z.infer<typeof GenerateTarotCardImageInputSchema>;
 
 const GenerateTarotCardImageOutputSchema = z.object({
   imageUrl: z.string().describe("The data URI of the generated image. Expected format: 'data:image/png;base64,<encoded_data>'."),
@@ -41,7 +41,7 @@ const generateTarotCardImageFlow = ai.defineFlow(
       model: 'googleai/gemini-2.0-flash-preview-image-generation',
       prompt: promptText,
       config: {
-        responseModalities: ['IMAGE'],
+        responseModalities: ['TEXT', 'IMAGE'],
       },
     });
 
