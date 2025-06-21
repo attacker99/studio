@@ -53,7 +53,7 @@ export default function Home() {
       setIsLoading(true);
       try {
         const cardCount = spreadSuggestion.cardCount;
-        const drawnCards = drawCards(cardCount);
+        const drawnCards = await drawCards(cardCount);
         
         const interpretationResult = await interpretTarotCards({
           question,
@@ -65,7 +65,8 @@ export default function Home() {
         setStep('reading');
       } catch (error) {
         console.error(error);
-        toast({ title: 'Error interpreting cards.', description: 'Please try again.', variant: 'destructive' });
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+        toast({ title: 'Failed to complete reading.', description: errorMessage, variant: 'destructive' });
       } finally {
         setIsLoading(false);
       }

@@ -17,8 +17,51 @@ export const TAROT_DECK = [
   'Page of Pentacles', 'Knight of Pentacles', 'Queen of Pentacles', 'King of Pentacles'
 ];
 
-export function drawCards(count: number): string[] {
-  // Simple shuffle and slice. In a real quantum app, this would be an API call.
-  const shuffled = [...TAROT_DECK].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, count);
+/**
+ * Draws a specified number of cards from the tarot deck using a quantum random source.
+ * This function fetches random numbers from the ANU Quantum Random Number Generator
+ * to perform a partial Fisher-Yates shuffle on the deck, ensuring a truly random draw.
+ * @param count The number of cards to draw.
+ * @returns A promise that resolves to an array of card names.
+ * @throws An error if the quantum random number service is unavailable or returns invalid data.
+ */
+export async function drawCards(count: number): Promise<string[]> {
+  try {
+    // We need one random number for each swap in our partial shuffle.
+    const response = await fetch(`https://qrng.anu.edu.au/API/jsonI.php?length=${count}&type=uint8`);
+    
+    if (!response.ok) {
+      throw new Error(`The quantum realm is unstable (API status: ${response.status})`);
+    }
+
+    const anudata = await response.json();
+
+    if (!anudata.success || !anudata.data || anudata.data.length < count) {
+      throw new Error('Received distorted signal from the quantum realm (Invalid API data)');
+    }
+
+    const randomNumbers: number[] = anudata.data;
+    const shuffledDeck = [...TAROT_DECK];
+    const n = shuffledDeck.length;
+
+    // Perform a partial Fisher-Yates shuffle using the quantum random numbers.
+    // This efficiently picks `count` random cards without repetition.
+    for (let i = 0; i < count; i++) {
+      // The random number (0-255) determines which card to swap with the current one.
+      const randomNumber = randomNumbers[i];
+      // We map the random number to the remaining unshuffled portion of the deck.
+      const remainingCards = n - i;
+      const swapIndex = i + (randomNumber % remainingCards);
+
+      // Swap the cards.
+      [shuffledDeck[i], shuffledDeck[swapIndex]] = [shuffledDeck[swapIndex], shuffledDeck[i]];
+    }
+
+    // Return the first `count` cards from the partially shuffled deck.
+    return shuffledDeck.slice(0, count);
+  } catch (error) {
+    console.error("Failed to draw cards using quantum randomness:", error);
+    // Propagate a user-friendly error. The UI will catch this and show a toast.
+    throw new Error("Could not connect to the quantum source. Please try again.");
+  }
 }
