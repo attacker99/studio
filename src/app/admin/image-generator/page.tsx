@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { TAROT_DECK } from '@/lib/tarot';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles, Terminal } from 'lucide-react';
 import { generateTarotCardImage } from '@/ai/flows/generate-tarot-card-image';
 import Image from 'next/image';
 import { slugify } from '@/lib/card-images';
 import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function ImageGeneratorPage() {
     const [isGenerating, setIsGenerating] = useState(false);
@@ -49,10 +50,14 @@ export default function ImageGeneratorPage() {
             setProgressMessage('All 78 cards have been generated!');
         } catch (error) {
             console.error(error);
-            const errorMessage = error instanceof Error ? error.message : 'Please check the console for details.';
+            let description = 'An error occurred. Please check the console for details.';
+            if (error instanceof Error && (error.message.includes('429') || error.message.includes('quota'))) {
+                description = "You've likely hit the API's daily rate limit (100 images/day). Please try again tomorrow or check your billing plan.";
+            }
+            
             toast({ 
                 title: "Error during bulk generation.", 
-                description: `An error occurred. ${errorMessage}`, 
+                description: description,
                 variant: "destructive",
                 duration: 9000 
             });
@@ -68,11 +73,18 @@ export default function ImageGeneratorPage() {
                 <CardHeader>
                     <CardTitle className="font-headline text-3xl">Tarot Card Image Generator</CardTitle>
                     <CardDescription>
-                        Generate the artwork for your Degen Tarot Cat deck. Click the button to generate all 78 cards.
-                        This will take about 9 minutes due to API rate limits (10 cards/minute).
+                        Generate the artwork for your Degen Tarot Cat deck.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                    <Alert>
+                        <Terminal className="h-4 w-4" />
+                        <AlertTitle>Heads Up! Important API Limits</AlertTitle>
+                        <AlertDescription>
+                            The free tier for the image generation API has a rate limit of **10 images per minute** and a daily limit of **100 images**. Generating all 78 cards at once will take about 9 minutes and use most of your daily quota.
+                        </AlertDescription>
+                    </Alert>
+                    
                     <Button onClick={handleGenerateAll} disabled={isGenerating} size="lg" className="w-full">
                         {isGenerating ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
                         {isGenerating ? 'Generating...' : 'Generate All 78 Cards'}
