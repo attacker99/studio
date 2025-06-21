@@ -43,54 +43,47 @@ function fisherYatesShuffle(deck: string[], randomNumbers: number[]): string[] {
 }
 
 /**
- * Shuffles the deck using the standard Fisher-Yates algorithm with Math.random().
- * This is used as a fallback if the quantum source is unavailable.
- * @param deck The deck to shuffle.
- * @returns The shuffled deck.
- */
-function standardShuffle(deck: string[]): string[] {
-    const shuffledDeck = [...deck];
-    for (let i = shuffledDeck.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffledDeck[i], shuffledDeck[j]] = [shuffledDeck[j], shuffledDeck[i]];
-    }
-    return shuffledDeck;
-}
-
-
-/**
  * Draws a specified number of cards from the tarot deck.
- * It first attempts to use a true quantum random number source. If that fails,
- * it falls back to a standard pseudo-random shuffle to ensure the app remains functional.
+ * It will attempt to use a true quantum random number source, retrying up to 3 times on failure.
  * @param count The number of cards to draw.
  * @returns A promise that resolves to an array of card names.
  */
 export async function drawCards(count: number): Promise<string[]> {
-  // We use the ANU Quantum Random Numbers API, which is a trusted public source.
   const deckSize = TAROT_DECK.length;
   const url = `https://qrng.anu.edu.au/API/jsonI.php?length=${deckSize}&type=uint16`;
+  const maxRetries = 3;
+  const retryDelay = 1000; // 1 second
 
-  try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
 
-    if (!response.ok) {
+      if (!response.ok) {
         throw new Error(`Quantum API responded with status ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (!data.success || !data.data || data.data.length < deckSize) {
+        throw new Error('Invalid or insufficient data from the quantum source.');
+      }
+
+      console.log(`Successfully shuffled deck with quantum randomness on attempt ${attempt}.`);
+      const quantumRandomNumbers = data.data as number[];
+      const shuffledDeck = fisherYatesShuffle(TAROT_DECK, quantumRandomNumbers);
+      return shuffledDeck.slice(0, count);
+
+    } catch (error) {
+      console.warn(`Attempt ${attempt} to fetch from quantum source failed:`, error);
+      if (attempt === maxRetries) {
+        console.error("All attempts to connect to quantum source failed.");
+        throw new Error('Could not connect to the quantum source after multiple attempts. This may be due to a network issue or a firewall blocking the request.');
+      }
+      // Wait before the next retry
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
     }
-
-    const data = await response.json();
-
-    if (!data.success || !data.data || data.data.length < deckSize) {
-      throw new Error('Invalid or insufficient data from the quantum source.');
-    }
-
-    console.log("Successfully shuffled deck with quantum randomness from ANU.");
-    const quantumRandomNumbers = data.data as number[];
-    const shuffledDeck = fisherYatesShuffle(TAROT_DECK, quantumRandomNumbers);
-    return shuffledDeck.slice(0, count);
-
-  } catch (error) {
-    console.warn("Could not connect to quantum source. Falling back to standard shuffle.", error);
-    const shuffledDeck = standardShuffle(TAROT_DECK);
-    return shuffledDeck.slice(0, count);
   }
+
+  // This should not be reachable, but it satisfies TypeScript's requirement for a return path.
+  throw new Error('Exhausted all retries to connect to the quantum source.');
 }
