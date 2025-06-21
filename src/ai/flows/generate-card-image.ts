@@ -56,10 +56,10 @@ const generateCardImageFlow = ai.defineFlow(
     if (isNumberedMinorArcana) {
       const number = numberMap[numberWord];
       const suit = suitMap[suitWord];
-      promptInstruction += ` The artwork MUST prominently feature exactly ${number} ${suit}. For example, the "Eight of Cups" must show exactly eight cups. This is a strict requirement.`
+      promptInstruction = `An artistic tarot card depicting ${number} ${suit}, representing "${cardName}". The artwork MUST prominently feature exactly ${number} ${suit}. This is a strict requirement.`
     }
-
-    finalPrompt = `${promptInstruction} The final image must look like a physical tarot card with clearly visible rounded corners and a consistent border. The card's artwork should be mystical, ethereal, and detailed with symbolic elements. The background MUST be a dark, complex, cosmic, star-filled sky; it absolutely CANNOT be plain white or a single solid color. The overall style should be a modern, surreal, degen cat-like twist on the classic Rider-Waite tarot deck. The card should contain artwork only, with no text.`;
+    
+    finalPrompt = `${promptInstruction} The overall style is a mystical, ethereal, and detailed degen cat-like twist on the classic Rider-Waite tarot deck. The image must be framed as a physical tarot card with rounded corners and a border. The background should be a dark, complex, cosmic scene filled with stars. Avoid simple, plain, or white backgrounds. The card should contain artwork only, without any text.`;
 
     const { media } = await ai.generate({
       model: 'googleai/gemini-2.0-flash-preview-image-generation',
