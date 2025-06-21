@@ -20,7 +20,7 @@ export type SuggestTarotSpreadInput = z.infer<typeof SuggestTarotSpreadInputSche
 const SuggestTarotSpreadOutputSchema = z.object({
   suggestedSpread: z.string().describe('The name of the suggested tarot spread (e.g., "Three Card Spread", "Celtic Cross").'),
   reason: z.string().describe('A brief explanation for why this spread is suitable for the user\'s question.'),
-  cardCount: z.number().int().positive().describe('The exact number of cards required for this specific spread.'),
+  cardCount: z.number().int().min(1).describe('The exact number of cards required for this specific spread.'),
 });
 export type SuggestTarotSpreadOutput = z.infer<typeof SuggestTarotSpreadOutputSchema>;
 
