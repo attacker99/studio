@@ -36,14 +36,9 @@ const cardNames = [
 // For example, the image for 'The Fool' should be at `public/images/tarot/the-fool.png`.
 // You can use the Image Generator page at /admin/image-generator to create these images.
 export const cardImageMap: { [key: string]: string } = cardNames.reduce((acc, cardName) => {
-  // A fallback image is used until the real one is generated and saved.
   const imageUrl = `/images/tarot/${slugify(cardName)}.png`;
-  const fallbackImageUrl = 'https://placehold.co/250x440.png';
-
-  // For the purpose of this example, we'll use a generic fallback for all.
-  // In a real project, you would check if the file exists before deciding.
-  // For now, we will just point to the final destination. The Next.js image
-  // component will show the alt text if the image is missing.
+  // The Next.js image component will show the alt text if the image is missing.
+  // As you generate the images using the tool, they will replace the alt text.
   acc[cardName] = imageUrl;
   return acc;
 }, {} as { [key: string]: string });

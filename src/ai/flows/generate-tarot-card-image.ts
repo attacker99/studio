@@ -1,4 +1,3 @@
-// src/ai/flows/generate-tarot-card-image.ts
 'use server';
 /**
  * @fileOverview A flow to generate a single tarot card image.
