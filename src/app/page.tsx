@@ -159,6 +159,7 @@ export default function Home() {
                 />
                 <Button
                   onClick={handleQuestionSubmit}
+                  disabled={isLoading}
                   size="lg"
                   className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
                 >
@@ -213,10 +214,10 @@ export default function Home() {
                   ))}
                 </RadioGroup>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Button onClick={handleSpreadConfirm} size="lg" className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground font-bold" disabled={selectedSpreadIndex === null}>
+                  <Button onClick={handleSpreadConfirm} size="lg" className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground font-bold" disabled={selectedSpreadIndex === null || isPending}>
                     Slay & Draw
                   </Button>
-                  <Button onClick={handleReset} size="lg" variant="outline" className="flex-1">
+                  <Button onClick={handleReset} size="lg" variant="outline" className="flex-1" disabled={isPending}>
                     New question, who dis?
                   </Button>
                 </div>
