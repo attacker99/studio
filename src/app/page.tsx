@@ -13,7 +13,7 @@ import { drawCards } from '@/lib/tarot';
 import { Loader } from '@/components/ui/loader';
 import { TarotCard } from '@/components/tarot-card';
 import { Logo } from '@/components/logo';
-import { Sparkles } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import ReactMarkdown from 'react-markdown';
@@ -28,7 +28,7 @@ export default function Home() {
   const [selectedSpreadIndex, setSelectedSpreadIndex] = useState<number | null>(null);
   const [confirmedSpread, setConfirmedSpread] = useState<SingleSpreadSuggestion | null>(null);
   const [readingResult, setReadingResult] = useState<{ cards: CardWithImage[]; interpretation: string } | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSuggesting, setIsSuggesting] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [isPending, startTransition] = useTransition();
 
@@ -39,8 +39,7 @@ export default function Home() {
       toast({ title: 'Please enter a question.', variant: 'destructive' });
       return;
     }
-    setIsLoading(true);
-    setLoadingMessage("The void kitty is pondering your question...");
+    setIsSuggesting(true);
     try {
       const suggestion = await suggestTarotSpread({ question });
       setSpreadSuggestion(suggestion);
@@ -49,7 +48,7 @@ export default function Home() {
       console.error(error);
       toast({ title: 'Error suggesting spread.', description: 'Please try again.', variant: 'destructive' });
     } finally {
-      setIsLoading(false);
+      setIsSuggesting(false);
     }
   };
 
@@ -68,13 +67,11 @@ export default function Home() {
     setConfirmedSpread(selectedSpread);
 
     startTransition(async () => {
-      setIsLoading(true);
       setLoadingMessage("Drawing cards, conjuring visions... it's giving... patience.");
       try {
         const totalCardCount = selectedSpread.parts.reduce((sum, part) => sum + part.positions.length, 0);
         if (totalCardCount === 0) {
             toast({ title: 'Invalid spread suggestion.', description: 'Card count cannot be zero.', variant: 'destructive' });
-            setIsLoading(false);
             return;
         }
 
@@ -119,7 +116,6 @@ export default function Home() {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
         toast({ title: 'Failed to complete reading.', description: errorMessage, variant: 'destructive' });
       } finally {
-        setIsLoading(false);
         setLoadingMessage('');
       }
     });
@@ -136,7 +132,7 @@ export default function Home() {
   };
 
   const renderContent = () => {
-    if (isLoading) {
+    if (isPending) {
       return <Loader message={loadingMessage} />;
     }
 
@@ -159,12 +155,16 @@ export default function Home() {
                 />
                 <Button
                   onClick={handleQuestionSubmit}
-                  disabled={isLoading}
+                  disabled={isSuggesting}
                   size="lg"
                   className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
                 >
-                  <Sparkles className="mr-2 h-5 w-5" />
-                  Let's Cook
+                  {isSuggesting ? (
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  ) : (
+                    <Sparkles className="mr-2 h-5 w-5" />
+                  )}
+                  {isSuggesting ? 'Cooking...' : "Let's Cook"}
                 </Button>
               </div>
             </CardContent>
@@ -215,7 +215,8 @@ export default function Home() {
                 </RadioGroup>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Button onClick={handleSpreadConfirm} size="lg" className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground font-bold" disabled={selectedSpreadIndex === null || isPending}>
-                    Slay & Draw
+                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isPending ? 'Slaying & Drawing...' : 'Slay & Draw'}
                   </Button>
                   <Button onClick={handleReset} size="lg" variant="outline" className="flex-1" disabled={isPending}>
                     New question, who dis?
@@ -235,7 +236,7 @@ export default function Home() {
                 <p className="text-muted-foreground max-w-2xl mx-auto">&quot;{question}&quot;</p>
               </div>
 
-              <div className="space-y-6">
+              <div className="flex flex-row flex-wrap gap-4 md:gap-6 justify-center">
                 {(() => {
                   let cardDrawnIndex = 0;
                   return confirmedSpread.parts.map((part, partIndex) => {
@@ -247,7 +248,7 @@ export default function Home() {
                     cardDrawnIndex += part.positions.length;
 
                     return (
-                      <div key={partIndex} className="bg-card/20 backdrop-blur-sm rounded-lg p-4 md:p-6">
+                      <div key={partIndex} className="bg-card/20 backdrop-blur-sm rounded-lg p-4 md:p-6 w-full">
                         <h3 className="font-headline text-2xl text-accent text-glow mb-4 text-center">{part.label}</h3>
                         <div className="flex flex-row flex-wrap gap-4 md:gap-6 justify-center">
                           {cardsForPart.map((card, indexInPart) => {
