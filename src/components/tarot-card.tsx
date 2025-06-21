@@ -27,7 +27,7 @@ export function TarotCard({ cardName, isRevealed, animationDelay = '0s', positio
                 </div>
                 <div className="card-back">
                     <Card className="w-full h-full overflow-hidden flex flex-col">
-                        <CardContent className="relative flex-grow p-0">
+                        <CardContent className="relative flex-grow p-0 min-h-0">
                             <Image
                                 src={`https://placehold.co/250x400.png`}
                                 alt={`An artistic rendering of the ${cardName} tarot card.`}
@@ -37,9 +37,9 @@ export function TarotCard({ cardName, isRevealed, animationDelay = '0s', positio
                                 data-ai-hint={dataAiHint}
                             />
                         </CardContent>
-                        <CardFooter className="flex-shrink-0 px-2 py-3 flex-col items-center justify-center bg-background/80 backdrop-blur-sm border-t">
-                            <p className="font-headline text-center text-sm leading-tight">{cardName}</p>
-                             {positionLabel && <p className="text-xs text-muted-foreground text-center leading-snug">{positionLabel}</p>}
+                        <CardFooter className="flex-shrink-0 px-2 py-2 flex-col items-center justify-center bg-background/80 backdrop-blur-sm border-t">
+                            <p className="font-headline text-center text-sm">{cardName}</p>
+                             {positionLabel && <p className="text-xs text-muted-foreground text-center mt-0.5">{positionLabel}</p>}
                         </CardFooter>
                     </Card>
                 </div>
