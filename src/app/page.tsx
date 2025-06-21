@@ -8,8 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { suggestTarotSpread, type SuggestTarotSpreadOutput, type SingleSpreadSuggestion } from '@/ai/flows/suggest-tarot-spread';
 import { interpretTarotCards, InterpretTarotCardsInput } from '@/ai/flows/interpret-tarot-cards';
-import { generateCardImage } from '@/ai/flows/generate-card-image';
 import { drawCards } from '@/lib/tarot';
+import { cardImageMap } from '@/lib/card-images';
 import { Loader } from '@/components/ui/loader';
 import { TarotCard } from '@/components/tarot-card';
 import { Logo } from '@/components/logo';
@@ -87,7 +87,7 @@ export default function Home() {
     setRevealedCards([]);
 
     startTransition(async () => {
-      setLoadingMessage("Drawing cards, conjuring visions... it's giving... patience.");
+      setLoadingMessage("Drawing cards, interpreting fate...");
       try {
         const totalCardCount = selectedSpread.parts.reduce((sum, part) => sum + part.positions.length, 0);
         if (totalCardCount === 0) {
@@ -112,25 +112,16 @@ export default function Home() {
           cardIndex += part.positions.length;
         }
 
-        const interpretationPromise = interpretTarotCards({
+        const interpretationResult = await interpretTarotCards({
           question,
           spreadName: selectedSpread.suggestedSpread,
           spreadParts: spreadPartsForInterpretation,
         });
         
-        const imageGenerationPromises = drawnCardsResult.map((card) =>
-          generateCardImage({ cardName: card.name })
-        );
-
-        const [interpretationResult, imageResults] = await Promise.all([
-          interpretationPromise,
-          Promise.all(imageGenerationPromises),
-        ]);
-
-        const cardsWithImages = drawnCardsResult.map((card, i) => ({
+        const cardsWithImages = drawnCardsResult.map((card) => ({
           name: card.name,
           reversed: card.reversed,
-          image: imageResults[i].imageDataUri,
+          image: cardImageMap[card.name],
         }));
 
         setReadingResult({ cards: cardsWithImages, interpretation: interpretationResult.interpretation });

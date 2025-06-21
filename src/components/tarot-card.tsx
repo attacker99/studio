@@ -17,7 +17,7 @@ type TarotCardProps = {
 
 export function TarotCard({ cardName, imageUrl, isRevealed, isReversed, animationDelay = '0s', positionLabel }: TarotCardProps) {
   return (
-    <div className="w-48 aspect-[2/3.5] animate-deal-card flex-shrink-0" style={{ animationDelay }}>
+    <div className="w-48 aspect-[25/44] animate-deal-card flex-shrink-0" style={{ animationDelay }}>
         <div className={cn('relative w-full h-full perspective', isRevealed && 'card-flipped')}>
             <div className="card-inner">
                 <div className="card-front">
@@ -32,13 +32,12 @@ export function TarotCard({ cardName, imageUrl, isRevealed, isReversed, animatio
                                 src={imageUrl}
                                 alt={`An artistic rendering of the ${cardName} tarot card.`}
                                 width={250}
-                                height={400}
+                                height={440}
                                 className={cn("object-cover w-full h-full transition-transform duration-500", isReversed && "rotate-180")}
-                                unoptimized
                                 priority
                             />
                         </CardContent>
-                        <CardFooter className="flex-shrink-0 py-3 px-2 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm border-t">
+                        <CardFooter className="flex-shrink-0 py-2 px-2 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm border-t">
                             <p className="font-headline text-center text-sm leading-tight">{cardName}</p>
                              {positionLabel && <p className="text-xs text-muted-foreground text-center mt-1 leading-snug">{positionLabel}</p>}
                         </CardFooter>
