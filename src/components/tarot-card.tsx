@@ -38,9 +38,9 @@ export function TarotCard({ cardName, imageUrl, isRevealed, isReversed, animatio
                                 priority
                             />
                         </CardContent>
-                        <CardFooter className="flex-shrink-0 p-2 min-h-[5rem] flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm border-t">
-                            <p className="font-headline text-center text-sm">{cardName}</p>
-                             {positionLabel && <p className="text-xs text-muted-foreground text-center mt-0.5">{positionLabel}</p>}
+                        <CardFooter className="flex-shrink-0 py-3 px-2 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm border-t">
+                            <p className="font-headline text-center text-sm leading-tight">{cardName}</p>
+                             {positionLabel && <p className="text-xs text-muted-foreground text-center mt-1 leading-snug">{positionLabel}</p>}
                         </CardFooter>
                     </Card>
                 </div>

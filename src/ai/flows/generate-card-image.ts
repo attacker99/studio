@@ -59,7 +59,7 @@ const generateCardImageFlow = ai.defineFlow(
       promptInstruction += ` The artwork MUST prominently feature exactly ${number} ${suit}. For example, the "Eight of Cups" must show exactly eight cups. This is a strict requirement.`
     }
 
-    finalPrompt = `${promptInstruction} The final image must look like a physical tarot card with clearly visible rounded corners and a consistent border. The card's artwork should be mystical, ethereal, and detailed with symbolic elements. The background MUST be a dark, cosmic, star-filled sky; it absolutely CANNOT be white or a single solid color. The overall style should be a modern, surreal, degen cat-like twist on the classic Rider-Waite tarot deck. The name '${cardName}' should be written at the bottom of the card in an elegant font.`;
+    finalPrompt = `${promptInstruction} The final image must look like a physical tarot card with clearly visible rounded corners and a consistent border. The card's artwork should be mystical, ethereal, and detailed with symbolic elements. The background MUST be a dark, complex, cosmic, star-filled sky; it absolutely CANNOT be plain white or a single solid color. The overall style should be a modern, surreal, degen cat-like twist on the classic Rider-Waite tarot deck. The card should contain artwork only, with no text.`;
 
     const { media } = await ai.generate({
       model: 'googleai/gemini-2.0-flash-preview-image-generation',
