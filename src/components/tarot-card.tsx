@@ -18,7 +18,7 @@ type TarotCardProps = {
 export function TarotCard({ cardName, imageUrl, isRevealed, isReversed, animationDelay = '0s', positionLabel }: TarotCardProps) {
   return (
     <div className="w-48 aspect-[2/3.5] animate-deal-card flex-shrink-0" style={{ animationDelay }}>
-        <div className={cn('relative w-full h-full perspective', isRevealed && 'card-flipped', isReversed && 'is-reversed')}>
+        <div className={cn('relative w-full h-full perspective', isRevealed && 'card-flipped')}>
             <div className="card-inner">
                 <div className="card-front">
                     <Card className="w-full h-full bg-primary flex flex-col items-center justify-center p-4">
@@ -33,7 +33,7 @@ export function TarotCard({ cardName, imageUrl, isRevealed, isReversed, animatio
                                 alt={`An artistic rendering of the ${cardName} tarot card.`}
                                 width={250}
                                 height={400}
-                                className="object-cover w-full h-full"
+                                className={cn("object-cover w-full h-full transition-transform duration-500", isReversed && "rotate-180")}
                                 unoptimized
                                 priority
                             />

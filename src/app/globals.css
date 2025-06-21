@@ -83,17 +83,9 @@ body {
     transition: transform 0.8s;
     transform-style: preserve-3d;
   }
-  
-  .is-reversed .card-inner {
-    transform: rotateZ(180deg);
-  }
 
   .card-flipped .card-inner {
     transform: rotateY(180deg);
-  }
-
-  .card-flipped.is-reversed .card-inner {
-    transform: rotateY(180deg) rotateZ(180deg);
   }
 
   .card-front,
