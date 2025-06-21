@@ -118,11 +118,13 @@ export default function Home() {
           spreadParts: spreadPartsForInterpretation,
         });
         
-        const imagePromises = drawnCards.map((cardName) => generateCardImage({ cardName }));
+        const imageGenerationPromises = drawnCards.map((cardName) =>
+          generateCardImage({ cardName })
+        );
 
         const [interpretationResult, imageResults] = await Promise.all([
           interpretationPromise,
-          Promise.all(imagePromises),
+          Promise.all(imageGenerationPromises),
         ]);
 
         const cardsWithImages = drawnCards.map((name, i) => ({
@@ -237,7 +239,9 @@ export default function Home() {
                 </RadioGroup>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Button onClick={handleSpreadConfirm} size="lg" className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground font-bold" disabled={selectedSpreadIndex === null || isPending}>
-                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
                     {isPending ? 'Slaying & Drawing...' : 'Slay & Draw'}
                   </Button>
                   <Button onClick={handleReset} size="lg" variant="outline" className="flex-1" disabled={isPending}>
@@ -258,7 +262,7 @@ export default function Home() {
                 <p className="text-muted-foreground max-w-2xl mx-auto">&quot;{question}&quot;</p>
               </div>
 
-              <div className="flex flex-row flex-wrap gap-4 md:gap-6 justify-center perspective">
+              <div className="flex flex-row flex-wrap gap-4 md:gap-6 justify-center">
                 {(() => {
                   let cardDrawnIndex = 0;
                   return confirmedSpread.parts.map((part, partIndex) => {
