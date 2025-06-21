@@ -22,46 +22,56 @@ export default function ImageGeneratorPage() {
 
     const handleGenerateAll = async () => {
         setIsGenerating(true);
-        setGeneratedImages([]);
-        setGenerationProgress(0);
-        setProgressMessage('');
-
-        const results: { cardName: string; imageUrl: string; }[] = [];
+        // Don't reset progress if we are resuming
+        if (generatedImages.length === 0) {
+            setGenerationProgress(0);
+            setProgressMessage('');
+        }
 
         try {
-            for (let i = 0; i < TAROT_DECK.length; i++) {
-                const cardName = TAROT_DECK[i];
-                const progressPercentage = Math.round(((i + 1) / TAROT_DECK.length) * 100);
-                
-                setProgressMessage(`Generating card ${i + 1} of ${TAROT_DECK.length}: ${cardName}`);
+            const alreadyGeneratedNames = new Set(generatedImages.map(img => img.cardName));
+            const cardsToGenerate = TAROT_DECK.filter(cardName => !alreadyGeneratedNames.has(cardName));
+
+            if (cardsToGenerate.length === 0) {
+                setProgressMessage('All 78 cards have already been generated!');
+                setIsGenerating(false);
+                return;
+            }
+
+            for (let i = 0; i < cardsToGenerate.length; i++) {
+                const cardName = cardsToGenerate[i];
+                const totalGenerated = alreadyGeneratedNames.size + i + 1;
+                const progressPercentage = Math.round((totalGenerated / TAROT_DECK.length) * 100);
+
+                setProgressMessage(`Generating card ${totalGenerated} of ${TAROT_DECK.length}: ${cardName}`);
                 setGenerationProgress(progressPercentage);
-                
+
                 // Delay to respect the API rate limit (10 requests/minute).
                 // 7 seconds is a safe buffer.
                 await new Promise(resolve => setTimeout(resolve, 7000));
 
                 const result = await generateTarotCardImage({ cardName });
-                
+
                 const newImage = { cardName, imageUrl: result.imageUrl };
-                // Add to results and update the displayed grid immediately
-                results.push(newImage);
-                setGeneratedImages([...results]); 
+                // Update state immediately and safely, preserving previous images
+                setGeneratedImages(prevImages => [...prevImages, newImage]);
             }
+
             setProgressMessage('All 78 cards have been generated!');
         } catch (error) {
             console.error(error);
             let description = 'An error occurred. Please check the console for details.';
             if (error instanceof Error && (error.message.includes('429') || error.message.includes('quota'))) {
-                description = "You've likely hit the API's daily rate limit (100 images/day). Please try again tomorrow or check your billing plan.";
+                description = "You've likely hit an API rate limit. Your progress has been saved. You can continue generation later.";
             }
-            
-            toast({ 
-                title: "Error during bulk generation.", 
+
+            toast({
+                title: "Error during bulk generation.",
                 description: description,
                 variant: "destructive",
-                duration: 9000 
+                duration: 9000
             });
-            setProgressMessage('An error occurred. Some cards may have failed.');
+            setProgressMessage('An error occurred. Progress has been saved.');
         } finally {
             setIsGenerating(false);
         }
@@ -73,7 +83,7 @@ export default function ImageGeneratorPage() {
                 <CardHeader>
                     <CardTitle className="font-headline text-3xl">Tarot Card Image Generator</CardTitle>
                     <CardDescription>
-                        Generate the artwork for your Degen Tarot Cat deck.
+                        Generate the artwork for your Degen Tarot Cat deck. Your progress is saved automatically.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -81,16 +91,16 @@ export default function ImageGeneratorPage() {
                         <Terminal className="h-4 w-4" />
                         <AlertTitle>Heads Up! Important API Limits</AlertTitle>
                         <AlertDescription>
-                            The free tier for the image generation API has a rate limit of **10 images per minute** and a daily limit of **100 images**. Generating all 78 cards at once will take about 9 minutes and use most of your daily quota.
+                            The free tier for the image generation API has a rate limit of **10 images per minute** and a daily limit of **100 images**. Generating all 78 cards at once will take about 9 minutes and use most of your daily quota. If interrupted, your progress is saved and you can resume by clicking the button again.
                         </AlertDescription>
                     </Alert>
                     
                     <Button onClick={handleGenerateAll} disabled={isGenerating} size="lg" className="w-full">
                         {isGenerating ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
-                        {isGenerating ? 'Generating...' : 'Generate All 78 Cards'}
+                        {isGenerating ? 'Generating...' : (generatedImages.length > 0 && generatedImages.length < 78 ? `Resume Generating (${78 - generatedImages.length} left)` : 'Generate All 78 Cards')}
                     </Button>
 
-                    {isGenerating && (
+                    {(isGenerating || generatedImages.length > 0) && (
                          <div className="flex flex-col items-center justify-center text-center p-8 bg-muted rounded-lg space-y-4">
                             <Progress value={generationProgress} className="w-full" />
                             <p className="text-muted-foreground">{progressMessage}</p>
@@ -99,7 +109,7 @@ export default function ImageGeneratorPage() {
 
                     {generatedImages.length > 0 && (
                         <div className="space-y-4">
-                            <h3 className="font-headline text-2xl">Generated Cards</h3>
+                            <h3 className="font-headline text-2xl">Generated Cards ({generatedImages.length} / 78)</h3>
                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                 {generatedImages.map((image) => (
                                     <Card key={image.cardName}>
