@@ -1,97 +1,114 @@
+
 'use client';
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { TAROT_DECK } from '@/lib/tarot';
 import { Loader2, Sparkles } from 'lucide-react';
 import { generateTarotCardImage } from '@/ai/flows/generate-tarot-card-image';
 import Image from 'next/image';
 import { slugify } from '@/lib/card-images';
+import { Progress } from '@/components/ui/progress';
 
 export default function ImageGeneratorPage() {
-    const [selectedCard, setSelectedCard] = useState<string>('');
     const [isGenerating, setIsGenerating] = useState(false);
-    const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
+    const [generatedImages, setGeneratedImages] = useState<{ cardName: string; imageUrl: string; }[]>([]);
+    const [generationProgress, setGenerationProgress] = useState(0);
+    const [progressMessage, setProgressMessage] = useState('');
     const { toast } = useToast();
 
-    const handleGenerate = async () => {
-        if (!selectedCard) {
-            toast({ title: "Please select a card.", variant: "destructive" });
-            return;
-        }
+    const handleGenerateAll = async () => {
         setIsGenerating(true);
-        setGeneratedImageUrl(null);
+        setGeneratedImages([]);
+        setGenerationProgress(0);
+        setProgressMessage('');
+
+        const results: { cardName: string; imageUrl: string; }[] = [];
+
         try {
-            const result = await generateTarotCardImage({ cardName: selectedCard });
-            setGeneratedImageUrl(result.imageUrl);
+            for (let i = 0; i < TAROT_DECK.length; i++) {
+                const cardName = TAROT_DECK[i];
+                const progressPercentage = Math.round(((i + 1) / TAROT_DECK.length) * 100);
+                
+                setProgressMessage(`Generating card ${i + 1} of ${TAROT_DECK.length}: ${cardName}`);
+                setGenerationProgress(progressPercentage);
+                
+                // Small delay to avoid overwhelming APIs.
+                await new Promise(resolve => setTimeout(resolve, 200));
+
+                const result = await generateTarotCardImage({ cardName });
+                
+                const newImage = { cardName, imageUrl: result.imageUrl };
+                // Add to results and update the displayed grid immediately
+                results.push(newImage);
+                setGeneratedImages([...results]); 
+            }
+            setProgressMessage('All 78 cards have been generated!');
         } catch (error) {
             console.error(error);
-            toast({ title: "Error generating image.", description: "Please try again.", variant: "destructive" });
+            const errorMessage = error instanceof Error ? error.message : 'Please check the console for details.';
+            toast({ 
+                title: "Error during bulk generation.", 
+                description: `An error occurred. ${errorMessage}`, 
+                variant: "destructive",
+                duration: 9000 
+            });
+            setProgressMessage('An error occurred. Some cards may have failed.');
         } finally {
             setIsGenerating(false);
         }
     };
     
-    const fileName = selectedCard ? `${slugify(selectedCard)}.png` : '';
-
     return (
-        <main className="relative z-10 flex min-h-screen flex-col items-center justify-center space-y-8 p-4 md:p-8 bg-background">
-            <Card className="w-full max-w-2xl">
+        <main className="relative z-10 flex min-h-screen flex-col items-center space-y-8 p-4 md:p-8 bg-background">
+            <Card className="w-full max-w-6xl">
                 <CardHeader>
                     <CardTitle className="font-headline text-3xl">Tarot Card Image Generator</CardTitle>
-                    <CardDescription>Generate the artwork for your Degen Tarot Cat deck, one card at a time.</CardDescription>
+                    <CardDescription>Generate the artwork for your Degen Tarot Cat deck. Click the button to generate all 78 cards.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    <div className="space-y-2">
-                        <label className="font-medium">Select a Card</label>
-                        <Select value={selectedCard} onValueChange={setSelectedCard}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Choose a tarot card..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {TAROT_DECK.map(card => (
-                                    <SelectItem key={card} value={card}>{card}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <Button onClick={handleGenerate} disabled={isGenerating || !selectedCard} size="lg" className="w-full">
+                    <Button onClick={handleGenerateAll} disabled={isGenerating} size="lg" className="w-full">
                         {isGenerating ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
-                        {isGenerating ? 'Generating...' : 'Generate Image'}
+                        {isGenerating ? 'Generating...' : 'Generate All 78 Cards'}
                     </Button>
 
                     {isGenerating && (
-                         <div className="flex flex-col items-center justify-center text-center p-8 bg-muted rounded-lg">
-                            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                            <p className="mt-4 text-muted-foreground">The AI is creating your masterpiece... this can take a moment.</p>
+                         <div className="flex flex-col items-center justify-center text-center p-8 bg-muted rounded-lg space-y-4">
+                            <Progress value={generationProgress} className="w-full" />
+                            <p className="text-muted-foreground">{progressMessage}</p>
                          </div>
                     )}
 
-                    {generatedImageUrl && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Generated: {selectedCard}</CardTitle>
-                                <CardDescription>Right-click the image to save it.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex flex-col items-center gap-4">
-                                <Image 
-                                    src={generatedImageUrl}
-                                    alt={`Generated image for ${selectedCard}`}
-                                    width={250}
-                                    height={440}
-                                    className="rounded-lg border shadow-lg"
-                                />
-                                <div className="w-full p-4 bg-muted rounded-md text-sm">
-                                    <p>1. Save the image above as <code className="bg-background px-1 py-0.5 rounded">{fileName}</code></p>
-                                    <p className="mt-2">2. Place the file in the <code className="bg-background px-1 py-0.5 rounded">public/images/tarot/</code> folder in your project.</p>
-                                    <p className="mt-2">3. The card will now appear correctly in your app!</p>
-                                </div>
-                            </CardContent>
-                        </Card>
+                    {generatedImages.length > 0 && (
+                        <div className="space-y-4">
+                            <h3 className="font-headline text-2xl">Generated Cards</h3>
+                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                {generatedImages.map((image) => (
+                                    <Card key={image.cardName}>
+                                        <CardHeader>
+                                            <CardTitle>{image.cardName}</CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="flex flex-col items-center gap-4">
+                                            <Image 
+                                                src={image.imageUrl}
+                                                alt={`Generated image for ${image.cardName}`}
+                                                width={250}
+                                                height={440}
+                                                className="rounded-lg border shadow-lg aspect-[25/44] object-cover"
+                                            />
+                                            <div className="w-full p-2 bg-muted rounded-md text-sm">
+                                                <p>1. Save image as:</p>
+                                                <code className="bg-background text-xs px-1 py-0.5 rounded break-all">{slugify(image.cardName)}.png</code>
+                                                <p className="mt-2">2. Place in folder:</p>
+                                                <code className="bg-background text-xs px-1 py-0.5 rounded">public/images/tarot/</code>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                        </div>
                     )}
                 </CardContent>
             </Card>
