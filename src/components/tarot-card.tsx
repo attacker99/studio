@@ -37,9 +37,9 @@ export function TarotCard({ cardName, isRevealed, animationDelay = '0s', positio
                                 data-ai-hint={dataAiHint}
                             />
                         </CardContent>
-                        <CardFooter className="p-2 flex-col items-center justify-center bg-background/80 backdrop-blur-sm border-t">
+                        <CardFooter className="flex-shrink-0 px-2 py-3 flex-col items-center justify-center bg-background/80 backdrop-blur-sm border-t">
                             <p className="font-headline text-center text-sm leading-tight">{cardName}</p>
-                             {positionLabel && <p className="text-xs text-muted-foreground text-center">{positionLabel}</p>}
+                             {positionLabel && <p className="text-xs text-muted-foreground text-center leading-snug">{positionLabel}</p>}
                         </CardFooter>
                     </Card>
                 </div>
