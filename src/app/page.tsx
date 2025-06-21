@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { suggestTarotSpread, type SuggestTarotSpreadOutput } from '@/ai/flows/suggest-tarot-spread';
 import { interpretTarotCards } from '@/ai/flows/interpret-tarot-cards';
-import { drawCards, getSpreadCardCount } from '@/lib/tarot';
+import { drawCards } from '@/lib/tarot';
 import { Loader } from '@/components/ui/loader';
 import { TarotCard } from '@/components/tarot-card';
 import { Logo } from '@/components/logo';
@@ -44,12 +44,15 @@ export default function Home() {
   };
 
   const handleSpreadConfirm = () => {
-    if (!spreadSuggestion) return;
+    if (!spreadSuggestion || !spreadSuggestion.cardCount) {
+      toast({ title: 'Invalid spread suggestion.', description: 'Could not determine the number of cards to draw.', variant: 'destructive' });
+      return;
+    };
     
     startTransition(async () => {
       setIsLoading(true);
       try {
-        const cardCount = getSpreadCardCount(spreadSuggestion.suggestedSpread);
+        const cardCount = spreadSuggestion.cardCount;
         const drawnCards = drawCards(cardCount);
         
         const interpretationResult = await interpretTarotCards({
@@ -120,7 +123,7 @@ export default function Home() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2 rounded-lg border bg-muted/50 p-4">
-                  <h3 className="font-headline text-2xl text-accent text-glow">{spreadSuggestion.suggestedSpread}</h3>
+                  <h3 className="font-headline text-2xl text-accent text-glow">{spreadSuggestion.suggestedSpread} ({spreadSuggestion.cardCount} cards)</h3>
                   <p className="text-muted-foreground">{spreadSuggestion.reason}</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4">

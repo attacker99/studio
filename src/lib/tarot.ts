@@ -17,23 +17,6 @@ export const TAROT_DECK = [
   'Page of Pentacles', 'Knight of Pentacles', 'Queen of Pentacles', 'King of Pentacles'
 ];
 
-const SPREAD_CONFIG: { [key: string]: number } = {
-  'three card spread': 3,
-  'celtic cross': 10,
-  'relationship spread': 5,
-  'past, present, future': 3,
-};
-
-export function getSpreadCardCount(spreadName: string): number {
-  const normalizedName = spreadName.toLowerCase().replace(/ spread$/i, '').trim();
-  for (const key in SPREAD_CONFIG) {
-    if (key.includes(normalizedName)) {
-      return SPREAD_CONFIG[key];
-    }
-  }
-  return 3; // Default to a 3-card spread if no match is found
-}
-
 export function drawCards(count: number): string[] {
   // Simple shuffle and slice. In a real quantum app, this would be an API call.
   const shuffled = [...TAROT_DECK].sort(() => 0.5 - Math.random());
