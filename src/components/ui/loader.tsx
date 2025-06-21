@@ -8,7 +8,7 @@ export function Loader({ className }: { className?: string }) {
         <Sparkles className="absolute h-16 w-16 animate-ping opacity-30" />
         <Sparkles className="absolute h-16 w-16 animate-pulse" />
       </div>
-      <p className="font-headline text-xl text-glow">Consulting the cosmos...</p>
+      <p className="font-headline text-xl text-glow">Vibin' with the void...</p>
     </div>
   );
 }

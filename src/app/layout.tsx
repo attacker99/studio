@@ -4,8 +4,8 @@ import { Toaster } from "@/components/ui/toaster"
 import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
-  title: 'Tarot Muse',
-  description: 'AI-powered tarot readings to gain insight and clarity.',
+  title: 'Degen Tarot Cat',
+  description: 'rizz-powered readings for the chronically online',
 };
 
 export default function RootLayout({

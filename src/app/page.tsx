@@ -126,13 +126,13 @@ export default function Home() {
         return (
           <Card className="w-full max-w-2xl bg-card/70 backdrop-blur-sm">
             <CardHeader className="text-center">
-              <CardTitle className="font-headline text-3xl md:text-4xl">Ask the Universe</CardTitle>
-              <CardDescription>What guidance do you seek?</CardDescription>
+              <CardTitle className="font-headline text-3xl md:text-4xl">Spill the Tea to the Void Kitty</CardTitle>
+              <CardDescription>what's the 411, kitten? no cap.</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid w-full gap-4">
                 <Textarea
-                  placeholder="Type your question here... for example 'Should I move to a new city or stay where I am?'"
+                  placeholder="ask me anything, like 'is my crush giving main character energy or nah?' or 'should i ghost my job and become a catfluencer?'"
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
                   rows={4}
@@ -144,7 +144,7 @@ export default function Home() {
                   className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
                 >
                   <Sparkles className="mr-2 h-5 w-5" />
-                  Get Spread Suggestion
+                  Let's Cook
                 </Button>
               </div>
             </CardContent>
@@ -156,8 +156,8 @@ export default function Home() {
           spreadSuggestion && (
             <Card className="w-full max-w-2xl animate-deal-card bg-card/70 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle className="font-headline text-3xl">Suggested Spreads</CardTitle>
-                <CardDescription>Choose the spread that resonates most with you.</CardDescription>
+                <CardTitle className="font-headline text-3xl">Vibes from the Void Kitty</CardTitle>
+                <CardDescription>pick a spread, bet.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                  <RadioGroup
@@ -195,10 +195,10 @@ export default function Home() {
                 </RadioGroup>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Button onClick={handleSpreadConfirm} size="lg" className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground font-bold" disabled={selectedSpreadIndex === null}>
-                    Confirm & Draw Cards
+                    Slay & Draw
                   </Button>
                   <Button onClick={handleReset} size="lg" variant="outline" className="flex-1">
-                    Ask Another Question
+                    New question, who dis?
                   </Button>
                 </div>
               </CardContent>
@@ -211,7 +211,7 @@ export default function Home() {
           readingResult && confirmedSpread && (
             <div className="w-full max-w-6xl space-y-8 animate-deal-card">
               <div className="text-center">
-                <h2 className="font-headline text-3xl md:text-4xl">Your Reading</h2>
+                <h2 className="font-headline text-3xl md:text-4xl">The Tea Has Been Spilled</h2>
                 <p className="text-muted-foreground max-w-2xl mx-auto">&quot;{question}&quot;</p>
               </div>
 
@@ -252,7 +252,7 @@ export default function Home() {
                 <CardHeader>
                   <CardTitle className="font-headline text-3xl flex items-center gap-3">
                     <Sparkles className="text-accent"/>
-                    Interpretation
+                    The Lowdown
                   </CardTitle>
                    <CardDescription>{confirmedSpread?.suggestedSpread}</CardDescription>
                 </CardHeader>
@@ -263,7 +263,7 @@ export default function Home() {
 
               <div className="text-center">
                 <Button onClick={handleReset} size="lg" variant="outline">
-                  Start a New Reading
+                  Run it back
                 </Button>
               </div>
             </div>
@@ -281,9 +281,9 @@ export default function Home() {
         <header className="flex flex-col items-center text-center">
             <Logo />
             <h1 className="font-headline text-5xl md:text-7xl font-bold tracking-tighter text-glow">
-            Tarot Muse
+            Degen Tarot Cat
             </h1>
-            <p className="text-muted-foreground mt-2">AI-powered insights at your fingertips</p>
+            <p className="text-muted-foreground mt-2">rizz-powered readings for the chronically online</p>
         </header>
         {renderContent()}
       </main>
