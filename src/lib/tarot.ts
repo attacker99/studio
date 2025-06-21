@@ -44,18 +44,21 @@ function fisherYatesShuffle(deck: string[], randomNumbers: number[]): string[] {
 
 /**
  * Draws a specified number of cards from the tarot deck.
- * It will attempt to use a true quantum random number source, retrying up to 3 times on failure.
+ * It will attempt to use a true quantum random number source, retrying indefinitely with exponential backoff if it fails.
  * @param count The number of cards to draw.
  * @returns A promise that resolves to an array of card names.
  */
 export async function drawCards(count: number): Promise<string[]> {
   const deckSize = TAROT_DECK.length;
   const url = `https://qrng.anu.edu.au/API/jsonI.php?length=${deckSize}&type=uint16`;
-  const maxRetries = 3;
-  const retryDelay = 1000; // 1 second
+  
+  let attempt = 1;
+  let delay = 1000; // start with 1 second
+  const maxDelay = 30000; // max delay of 30 seconds
 
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+  while (true) { // Retry indefinitely
     try {
+      // Use a 5-second timeout for the fetch request itself
       const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
 
       if (!response.ok) {
@@ -74,16 +77,14 @@ export async function drawCards(count: number): Promise<string[]> {
       return shuffledDeck.slice(0, count);
 
     } catch (error) {
-      console.warn(`Attempt ${attempt} to fetch from quantum source failed:`, error);
-      if (attempt === maxRetries) {
-        console.error("All attempts to connect to quantum source failed.");
-        throw new Error('Could not connect to the quantum source after multiple attempts. This may be due to a network issue or a firewall blocking the request.');
-      }
-      // Wait before the next retry
-      await new Promise(resolve => setTimeout(resolve, retryDelay));
+      console.warn(`Attempt ${attempt} to fetch from quantum source failed. Retrying in ${delay / 1000}s...`, error);
+      
+      // Wait for the current delay
+      await new Promise(resolve => setTimeout(resolve, delay));
+      
+      // Increase delay for the next attempt (exponential backoff)
+      delay = Math.min(delay * 2, maxDelay);
+      attempt++;
     }
   }
-
-  // This should not be reachable, but it satisfies TypeScript's requirement for a return path.
-  throw new Error('Exhausted all retries to connect to the quantum source.');
 }
