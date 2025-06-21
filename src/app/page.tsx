@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -28,11 +28,29 @@ export default function Home() {
   const [selectedSpreadIndex, setSelectedSpreadIndex] = useState<number | null>(null);
   const [confirmedSpread, setConfirmedSpread] = useState<SingleSpreadSuggestion | null>(null);
   const [readingResult, setReadingResult] = useState<{ cards: CardWithImage[]; interpretation: string } | null>(null);
+  const [revealedCards, setRevealedCards] = useState<boolean[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [isPending, startTransition] = useTransition();
 
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (step === 'reading' && readingResult && revealedCards.some(c => !c)) {
+      const revealTimer = setTimeout(() => {
+        readingResult.cards.forEach((_, index) => {
+          setTimeout(() => {
+            setRevealedCards(prev => {
+              const newRevealed = [...prev];
+              newRevealed[index] = true;
+              return newRevealed;
+            });
+          }, index * 300);
+        });
+      }, 700); // Wait for deal animation to finish
+      return () => clearTimeout(revealTimer);
+    }
+  }, [step, readingResult, revealedCards]);
 
   const handleQuestionSubmit = async () => {
     if (!question.trim()) {
@@ -65,6 +83,8 @@ export default function Home() {
     };
     
     setConfirmedSpread(selectedSpread);
+    setReadingResult(null);
+    setRevealedCards([]);
 
     startTransition(async () => {
       setLoadingMessage("Drawing cards, conjuring visions... it's giving... patience.");
@@ -76,6 +96,7 @@ export default function Home() {
         }
 
         const drawnCards = await drawCards(totalCardCount);
+        setRevealedCards(new Array(drawnCards.length).fill(false));
         
         const spreadPartsForInterpretation: InterpretTarotCardsInput['spreadParts'] = [];
         let cardIndex = 0;
@@ -129,6 +150,7 @@ export default function Home() {
     setSelectedSpreadIndex(null);
     setConfirmedSpread(null);
     setLoadingMessage('');
+    setRevealedCards([]);
   };
 
   const renderContent = () => {
@@ -230,13 +252,13 @@ export default function Home() {
       case 'reading':
         return (
           readingResult && confirmedSpread && (
-            <div className="w-full max-w-6xl space-y-8 animate-deal-card">
-              <div className="text-center">
+            <div className="w-full max-w-6xl space-y-8">
+              <div className="text-center animate-deal-card" style={{ animationDelay: '0s'}}>
                 <h2 className="font-headline text-3xl md:text-4xl">The Tea Has Been Spilled</h2>
                 <p className="text-muted-foreground max-w-2xl mx-auto">&quot;{question}&quot;</p>
               </div>
 
-              <div className="flex flex-row flex-wrap gap-4 md:gap-6 justify-center">
+              <div className="flex flex-row flex-wrap gap-4 md:gap-6 justify-center perspective">
                 {(() => {
                   let cardDrawnIndex = 0;
                   return confirmedSpread.parts.map((part, partIndex) => {
@@ -245,20 +267,22 @@ export default function Home() {
                       cardDrawnIndex + part.positions.length
                     );
                     const positionsForPart = part.positions;
+                    const partStartIndex = cardDrawnIndex;
                     cardDrawnIndex += part.positions.length;
 
                     return (
-                      <div key={partIndex} className="bg-card/20 backdrop-blur-sm rounded-lg p-4 md:p-6 w-full">
+                      <div key={partIndex} className="bg-card/20 backdrop-blur-sm rounded-lg p-4 md:p-6 w-full animate-deal-card" style={{ animationDelay: '0.2s'}}>
                         <h3 className="font-headline text-2xl text-accent text-glow mb-4 text-center">{part.label}</h3>
                         <div className="flex flex-row flex-wrap gap-4 md:gap-6 justify-center">
                           {cardsForPart.map((card, indexInPart) => {
+                            const overallIndex = partStartIndex + indexInPart;
                             return (
                               <TarotCard
                                 key={card.name}
                                 cardName={card.name}
                                 imageUrl={card.image}
-                                isRevealed={true}
-                                animationDelay={`${(cardDrawnIndex - cardsForPart.length + indexInPart) * 0.15}s`}
+                                isRevealed={revealedCards[overallIndex]}
+                                animationDelay={`${overallIndex * 0.1 + 0.3}s`}
                                 positionLabel={positionsForPart[indexInPart]}
                               />
                             );
@@ -270,18 +294,21 @@ export default function Home() {
                 })()}
               </div>
 
-              <Card className="bg-card/70 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="font-headline text-3xl flex items-center gap-3">
-                    <Sparkles className="text-accent"/>
-                    The Lowdown
-                  </CardTitle>
-                   <CardDescription>{confirmedSpread?.suggestedSpread}</CardDescription>
-                </CardHeader>
-                <CardContent className="prose prose-invert max-w-none text-foreground/90 font-body text-base">
-                  <ReactMarkdown>{readingResult.interpretation}</ReactMarkdown>
-                </CardContent>
-              </Card>
+              {revealedCards.every(r => r) && readingResult.interpretation && (
+                 <Card className="bg-card/70 backdrop-blur-sm animate-deal-card" style={{ animationDelay: `${readingResult.cards.length * 0.1 + 0.5}s`}}>
+                  <CardHeader>
+                    <CardTitle className="font-headline text-3xl flex items-center gap-3">
+                      <Sparkles className="text-accent"/>
+                      The Lowdown
+                    </CardTitle>
+                    <CardDescription>{confirmedSpread?.suggestedSpread}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="prose prose-invert max-w-none text-foreground/90 font-body text-base">
+                    <ReactMarkdown>{readingResult.interpretation}</ReactMarkdown>
+                  </CardContent>
+                </Card>
+              )}
+
 
               <div className="text-center">
                 <Button onClick={handleReset} size="lg" variant="outline">
