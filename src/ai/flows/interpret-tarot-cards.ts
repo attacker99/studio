@@ -16,6 +16,7 @@ import {z} from 'genkit';
 const CardWithPositionSchema = z.object({
   cardName: z.string().describe("The name of the drawn card."),
   positionLabel: z.string().describe("The label describing the meaning of this card's position in the spread."),
+  reversed: z.boolean().describe("Whether the card was drawn reversed (upside down)."),
 });
 
 const SpreadPartWithCardsSchema = z.object({
@@ -49,8 +50,9 @@ Your task is to interpret a tarot reading based on the user's question, the chos
 
 Here are your instructions, listen up:
 1.  Start by saying something like: "Aight, let's see what the cards are saying for your '{{{spreadName}}}' spread. It's giving..."
-2.  For each card, state its position, then the card name, then give the lowdown. Be dramatic. Make it punchy. Start each one on a new line.
-3.  If it's a comparison spread, you GOTTA compare the two options. Help them make a choice, for real. Make it a vibe check.
+2.  For each card, state its position and name. If a card is reversed, you MUST say it's reversed and interpret its meaning accordingly. Reversed cards often mean blocked energy, delays, or an internal focus. It's like the vibe is off.
+3.  Give the lowdown for each card. Be dramatic. Make it punchy. Start each one on a new line.
+4.  If it's a comparison spread, you GOTTA compare the two options. Help them make a choice, for real. Make it a vibe check.
 
 Reading Deets:
 Question: {{{question}}}
@@ -60,7 +62,7 @@ Cards Pulled:
 {{#each spreadParts}}
 ### {{{label}}}
 {{#each cards}}
-- {{{positionLabel}}}: {{{cardName}}}
+- {{{positionLabel}}}: {{{cardName}}}{{#if reversed}} (Reversed){{/if}}
 {{/each}}
 {{/each}}
 

@@ -10,14 +10,15 @@ type TarotCardProps = {
   cardName: string;
   imageUrl: string;
   isRevealed: boolean;
+  isReversed: boolean;
   animationDelay?: string;
   positionLabel?: string;
 };
 
-export function TarotCard({ cardName, imageUrl, isRevealed, animationDelay = '0s', positionLabel }: TarotCardProps) {
+export function TarotCard({ cardName, imageUrl, isRevealed, isReversed, animationDelay = '0s', positionLabel }: TarotCardProps) {
   return (
-    <div className="w-36 md:w-48 aspect-[2/3.5] animate-deal-card flex-shrink-0" style={{ animationDelay }}>
-        <div className={cn('relative w-full h-full perspective', isRevealed && 'card-flipped')}>
+    <div className="w-48 aspect-[2/3.5] animate-deal-card flex-shrink-0" style={{ animationDelay }}>
+        <div className={cn('relative w-full h-full perspective', isRevealed && 'card-flipped', isReversed && 'is-reversed')}>
             <div className="card-inner">
                 <div className="card-front">
                     <Card className="w-full h-full bg-primary flex flex-col items-center justify-center p-4">
@@ -37,7 +38,7 @@ export function TarotCard({ cardName, imageUrl, isRevealed, animationDelay = '0s
                                 priority
                             />
                         </CardContent>
-                        <CardFooter className="flex-shrink-0 p-2 h-auto min-h-[5rem] flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm border-t">
+                        <CardFooter className="flex-shrink-0 p-2 min-h-[5rem] flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm border-t">
                             <p className="font-headline text-center text-sm">{cardName}</p>
                              {positionLabel && <p className="text-xs text-muted-foreground text-center mt-0.5">{positionLabel}</p>}
                         </CardFooter>

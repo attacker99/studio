@@ -43,14 +43,16 @@ function fisherYatesShuffle(deck: string[], randomNumbers: number[]): string[] {
 }
 
 /**
- * Draws a specified number of cards from the tarot deck.
+ * Draws a specified number of cards from the tarot deck, with a chance for each to be reversed.
  * It will attempt to use a true quantum random number source, retrying indefinitely with exponential backoff if it fails.
  * @param count The number of cards to draw.
- * @returns A promise that resolves to an array of card names.
+ * @returns A promise that resolves to an array of card objects, each with a name and a reversed status.
  */
-export async function drawCards(count: number): Promise<string[]> {
+export async function drawCards(count: number): Promise<Array<{ name: string; reversed: boolean }>> {
   const deckSize = TAROT_DECK.length;
-  const url = `https://qrng.anu.edu.au/API/jsonI.php?length=${deckSize}&type=uint16`;
+  // We need `deckSize` numbers for shuffling and `count` numbers for reversal chance.
+  const numbersToFetch = deckSize + count;
+  const url = `https://qrng.anu.edu.au/API/jsonI.php?length=${numbersToFetch}&type=uint16`;
   
   let attempt = 1;
   let delay = 1000; // start with 1 second
@@ -67,14 +69,26 @@ export async function drawCards(count: number): Promise<string[]> {
 
       const data = await response.json();
 
-      if (!data.success || !data.data || data.data.length < deckSize) {
+      if (!data.success || !data.data || data.data.length < numbersToFetch) {
         throw new Error('Invalid or insufficient data from the quantum source.');
       }
 
       console.log(`Successfully shuffled deck with quantum randomness on attempt ${attempt}.`);
       const quantumRandomNumbers = data.data as number[];
-      const shuffledDeck = fisherYatesShuffle(TAROT_DECK, quantumRandomNumbers);
-      return shuffledDeck.slice(0, count);
+      
+      const shuffleNumbers = quantumRandomNumbers.slice(0, deckSize);
+      const reversalNumbers = quantumRandomNumbers.slice(deckSize);
+
+      const shuffledDeck = fisherYatesShuffle(TAROT_DECK, shuffleNumbers);
+      const drawnCardNames = shuffledDeck.slice(0, count);
+
+      const result = drawnCardNames.map((name, index) => ({
+        name,
+        // 50% chance of being reversed based on the quantum number
+        reversed: reversalNumbers[index] % 2 === 0,
+      }));
+
+      return result;
 
     } catch (error) {
       console.warn(`Attempt ${attempt} to fetch from quantum source failed. Retrying in ${delay / 1000}s...`, error);

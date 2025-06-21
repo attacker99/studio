@@ -19,7 +19,7 @@ import { Label } from '@/components/ui/label';
 import ReactMarkdown from 'react-markdown';
 
 type Step = 'question' | 'suggestion' | 'reading';
-type CardWithImage = { name: string; image: string };
+type CardWithImage = { name: string; image: string; reversed: boolean; };
 
 export default function Home() {
   const [step, setStep] = useState<Step>('question');
@@ -95,15 +95,15 @@ export default function Home() {
             return;
         }
 
-        const drawnCards = await drawCards(totalCardCount);
-        setRevealedCards(new Array(drawnCards.length).fill(false));
+        const drawnCardsResult = await drawCards(totalCardCount);
+        setRevealedCards(new Array(drawnCardsResult.length).fill(false));
         
         const spreadPartsForInterpretation: InterpretTarotCardsInput['spreadParts'] = [];
         let cardIndex = 0;
         for (const part of selectedSpread.parts) {
           const cardsWithPositions = part.positions.map((positionLabel, indexInPart) => {
-            const cardName = drawnCards[cardIndex + indexInPart];
-            return { cardName, positionLabel };
+            const card = drawnCardsResult[cardIndex + indexInPart];
+            return { cardName: card.name, positionLabel, reversed: card.reversed };
           });
           spreadPartsForInterpretation.push({
             label: part.label,
@@ -118,8 +118,8 @@ export default function Home() {
           spreadParts: spreadPartsForInterpretation,
         });
         
-        const imageGenerationPromises = drawnCards.map((cardName) =>
-          generateCardImage({ cardName })
+        const imageGenerationPromises = drawnCardsResult.map((card) =>
+          generateCardImage({ cardName: card.name })
         );
 
         const [interpretationResult, imageResults] = await Promise.all([
@@ -127,8 +127,9 @@ export default function Home() {
           Promise.all(imageGenerationPromises),
         ]);
 
-        const cardsWithImages = drawnCards.map((name, i) => ({
-          name,
+        const cardsWithImages = drawnCardsResult.map((card, i) => ({
+          name: card.name,
+          reversed: card.reversed,
           image: imageResults[i].imageDataUri,
         }));
 
@@ -286,6 +287,7 @@ export default function Home() {
                                 cardName={card.name}
                                 imageUrl={card.image}
                                 isRevealed={revealedCards[overallIndex]}
+                                isReversed={card.reversed}
                                 animationDelay={`${overallIndex * 0.1 + 0.3}s`}
                                 positionLabel={positionsForPart[indexInPart]}
                               />
