@@ -73,7 +73,7 @@ const SingleCardInterpretationSchema = z.object({
 });
 
 const InterpretationOutputSchema = z.object({
-    overallInterpretation: z.string().describe("A cohesive summary that ties the interpretations of the individual cards together to answer the user's follow-up question. This should be written in a cat-like, gen-alpha tone."),
+    overallInterpretation: z.string().describe("A cohesive summary that ties the interpretations of the individual cards together to answer the user's follow-up question. This should be written in a cat-like, gen-alpha tone. IMPORTANT: You MUST NOT mention any tarot card names in this field. All specific card interpretations must be in the 'cardInterpretations' field."),
     cardInterpretations: z.array(SingleCardInterpretationSchema).describe("An array containing the interpretation for EACH newly drawn card provided in the input. The length of this array MUST match the length of the 'newlyDrawnCards' input array.")
 });
 
@@ -92,8 +92,9 @@ To get the tea, you just pulled these cards:
 {{/each}}
 
 Your job is to interpret EACH of these cards and then give an overall summary.
-For each card in the \`newlyDrawnCards\` input, create a corresponding entry in the \`cardInterpretations\` output array.
-Then, write a final \`overallInterpretation\` that puts it all together to answer their question. Slay.
+For each card in the \`newlyDrawnCards\` input, you MUST create a corresponding entry in the \`cardInterpretations\` output array.
+Then, write a final \`overallInterpretation\` that puts it all together to answer their question.
+IMPORTANT: Do NOT mention any card names in the \`overallInterpretation\` field. That field is only for the summary. Slay.
 {{else}}
 You decided not to draw any new cards. Just answer their question directly in the \`overallInterpretation\` field based on the original reading. The \`cardInterpretations\` array should be empty. Keep it real.
 {{/if}}
@@ -118,7 +119,7 @@ const clarifyTarotReadingFlow = ai.defineFlow(
 
     let newlyDrawnCards: z.infer<typeof CardDrawnSchema>[] = [];
 
-    // Step 2: If the decision is to draw, then draw them.
+    // Step 2: If the decision is to draw, then draw them from the remaining deck.
     if (decision.cardsToDraw > 0) {
         const availableCards = TAROT_DECK.filter(c => !input.allDrawnCardNames.includes(c));
         if (availableCards.length >= decision.cardsToDraw) {
@@ -135,16 +136,19 @@ const clarifyTarotReadingFlow = ai.defineFlow(
     const interpretation = interpretationResult.output!;
 
     // Step 4: Assemble the final human-readable response from the structured data.
+    // This process ensures the text matches the data.
     let finalClarification = interpretation.overallInterpretation;
 
     if (interpretation.cardInterpretations && interpretation.cardInterpretations.length > 0) {
         const cardDetails = interpretation.cardInterpretations.map(ci => {
+            // Find the original card data to check if it was reversed
             const card = newlyDrawnCards.find(c => c.cardName === ci.cardName);
             const displayName = card?.reversed ? `${ci.cardName} (Reversed)` : ci.cardName;
             return `\n\n**${displayName}**: ${ci.interpretation}`;
         }).join('');
 
-        finalClarification = `${cardDetails}\n\n**The Lowdown:** ${interpretation.overallInterpretation}`;
+        const preamble = "The plot thickens! To get more tea, I pulled these cards for you:";
+        finalClarification = `${preamble}${cardDetails}\n\n**The Lowdown:** ${interpretation.overallInterpretation}`;
     }
 
     // Step 5: Return the final, structured result for the frontend.
@@ -154,5 +158,3 @@ const clarifyTarotReadingFlow = ai.defineFlow(
     };
   }
 );
-
-    
