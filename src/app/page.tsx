@@ -415,36 +415,45 @@ export default function Home() {
                 </Card>
               )}
 
-              <Card className="bg-card/70 backdrop-blur-sm animate-deal-card" style={{ animationDelay: `${readingResult.cards.length * 0.1 + 0.7}s`}}>
-                <CardHeader>
-                  <CardTitle className="font-headline text-xl">Got more questions? The kitty is listening.</CardTitle>
-                  <CardDescription>Ask your kitty a follow-up question. It might even draw more cards if the vibe is right.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid w-full gap-4">
-                    <Textarea
-                      placeholder="e.g., 'tell me more about the tower card' or 'what should I watch out for?'"
-                      value={followUpQuestion}
-                      onChange={(e) => setFollowUpQuestion(e.target.value)}
-                      rows={3}
-                      className="bg-background/80"
-                      disabled={isClarifying}
-                    />
-                    <Button
-                      onClick={handleFollowUpSubmit}
-                      disabled={isClarifying || !followUpQuestion.trim()}
-                      size="lg"
-                    >
-                      {isClarifying ? (
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      ) : (
-                        <Sparkles className="mr-2 h-5 w-5" />
-                      )}
-                      {isClarifying ? 'Consulting the cosmic litterbox...' : 'Ask the kitty'}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              {clarificationRounds.length < 2 ? (
+                <Card className="bg-card/70 backdrop-blur-sm animate-deal-card" style={{ animationDelay: `${readingResult.cards.length * 0.1 + 0.7}s`}}>
+                  <CardHeader>
+                    <CardTitle className="font-headline text-xl">Ask a Follow-Up Question ({clarificationRounds.length + 1}/2)</CardTitle>
+                    <CardDescription>What else is on your mind? The kitty is listening.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid w-full gap-4">
+                      <Textarea
+                        placeholder="e.g., 'tell me more about the tower card' or 'what should I watch out for?'"
+                        value={followUpQuestion}
+                        onChange={(e) => setFollowUpQuestion(e.target.value)}
+                        rows={3}
+                        className="bg-background/80"
+                        disabled={isClarifying}
+                      />
+                      <Button
+                        onClick={handleFollowUpSubmit}
+                        disabled={isClarifying || !followUpQuestion.trim()}
+                        size="lg"
+                      >
+                        {isClarifying ? (
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        ) : (
+                          <Sparkles className="mr-2 h-5 w-5" />
+                        )}
+                        {isClarifying ? 'Consulting the cosmic litterbox...' : 'Ask the kitty'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="bg-card/70 backdrop-blur-sm animate-deal-card text-center" style={{ animationDelay: `${readingResult.cards.length * 0.1 + 0.7}s`}}>
+                  <CardHeader>
+                    <CardTitle className="font-headline text-xl">The Reading is Complete</CardTitle>
+                    <CardDescription>The kitty has spoken. You may start a new reading if you have more questions.</CardDescription>
+                  </CardHeader>
+                </Card>
+              )}
 
               <div className="text-center">
                 <Button onClick={handleReset} size="lg" variant="outline">
