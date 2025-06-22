@@ -101,6 +101,7 @@ Your suggestion, make it iconic:
 OK, bet. Here's the user's question: "{{question}}"
 `,
   config: {
+    timeout: 50000,
     safetySettings: [
       { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
       { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },

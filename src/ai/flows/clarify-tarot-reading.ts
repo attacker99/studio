@@ -82,6 +82,7 @@ Current Follow-up Question: "{{{followUpQuestion}}}"
 
 Based on the context, how many cards should be drawn? Respond ONLY with the required JSON object.`,
     config: {
+        timeout: 50000,
         safetySettings: [
           { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
           { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
@@ -120,6 +121,7 @@ Newly Drawn Cards to Interpret:
 
 Now, generate the interpretation text and respond ONLY with the required JSON object.`,
     config: {
+        timeout: 50000,
         safetySettings: [
           { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
           { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
@@ -168,6 +170,7 @@ Current Follow-up Question: "{{{followUpQuestion}}}"
 
 Now, generate the answer based on what we already know and respond ONLY with the required JSON object.`,
     config: {
+        timeout: 50000,
         safetySettings: [
           { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
           { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
