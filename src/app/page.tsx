@@ -222,6 +222,14 @@ export default function Home() {
                   placeholder="ask me anything, like 'is my crush giving main character energy or nah?' or 'should i ghost my job and become a catfluencer?'"
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      if (!isSuggesting && question.trim()) {
+                        handleQuestionSubmit();
+                      }
+                    }
+                  }}
                   rows={4}
                   className="bg-background/80"
                 />
@@ -427,6 +435,14 @@ export default function Home() {
                         placeholder="e.g., 'tell me more about the tower card' or 'what should I watch out for?'"
                         value={followUpQuestion}
                         onChange={(e) => setFollowUpQuestion(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            if (!isClarifying && followUpQuestion.trim()) {
+                              handleFollowUpSubmit();
+                            }
+                          }
+                        }}
                         rows={3}
                         className="bg-background/80"
                         disabled={isClarifying}
