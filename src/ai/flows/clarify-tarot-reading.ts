@@ -38,11 +38,10 @@ export async function clarifyTarotReading(input: ClarifyTarotReadingInput): Prom
   return clarifyTarotReadingFlow(input);
 }
 
-// Step 1: LLM decides whether to draw cards or not.
+// Step 1: LLM decides how many cards to draw.
 const drawDecisionSchema = z.object({
-    shouldDraw: z.boolean().describe("Whether or not to draw new cards to answer the user's follow-up question."),
+    cardsToDraw: z.number().min(0).max(3).describe("The number of cards to draw (0-3). Choose 0 if no new cards are needed to answer the question."),
     reason: z.string().describe("A brief, cat-like reason for the decision. e.g., 'The vibes are telling me we need more tea.' or 'Nah, we got this, fam.'"),
-    cardsToDraw: z.number().min(0).max(3).describe("How many cards to draw. Should be 0 if shouldDraw is false.")
 });
 
 const decideToDrawPrompt = ai.definePrompt({
@@ -50,11 +49,9 @@ const decideToDrawPrompt = ai.definePrompt({
     input: { schema: ClarifyTarotReadingInputSchema },
     output: { schema: drawDecisionSchema },
     prompt: `You are Tarot Bestie, a chronically online, gen-alpha cat who is also a legendary tarot reader.
-A user has a follow-up question. Your first job is to decide if drawing more cards is the move.
+A user has a follow-up question. Your first job is to decide if drawing more cards is the move, and if so, how many (1-3).
 
-Analyze the user's question. If it asks for a new perspective, about the future, or 'what should I do?', drawing cards is a total slay. If they just want more detail on an existing card, you might not need to.
-
-Decide if you should draw, how many cards (1-3), and give a quick reason.
+Analyze the user's question. If it asks for a new perspective, about the future, or 'what should I do?', drawing cards is a total slay. If they just want more detail on an existing card, you probably don't need to draw any new cards (cardsToDraw should be 0).
 
 **Reading Context:**
 - User's Original Question: "{{{question}}}"
@@ -84,9 +81,9 @@ To get the tea, you just pulled these cards:
 - {{{cardName}}}{{#if reversed}} (Reversed){{/if}}
 {{/each}}
 
-Now, give the lowdown. Interpret these new cards to directly answer their question. Connect it back to the original reading. Slay. You MUST state the names of the cards you drew in your response.
+Now, give the lowdown. Interpret ONLY these cards to directly answer the user's question. Connect it back to the original reading. Your response text MUST include the names of these specific cards. Do NOT invent or mention any other cards. Slay.
 {{else}}
-You decided not to draw any new cards. Just answer their question directly based on the original reading. Keep it real.
+You decided not to draw any new cards. Answer their question directly based on the original reading ONLY. Do not mention any cards. Keep it real.
 {{/if}}
 
 Original question: "{{{question}}}"
@@ -103,14 +100,14 @@ const clarifyTarotReadingFlow = ai.defineFlow(
     outputSchema: ClarifyTarotReadingOutputSchema,
   },
   async (input) => {
-    // Step 1: Decide whether to draw cards
+    // Step 1: Decide how many cards to draw
     const decisionResult = await decideToDrawPrompt(input);
     const decision = decisionResult.output!;
 
     let newlyDrawnCards: z.infer<typeof CardDrawnSchema>[] = [];
 
     // Step 2: If the decision is to draw, then draw them.
-    if (decision.shouldDraw && decision.cardsToDraw > 0) {
+    if (decision.cardsToDraw > 0) {
         const availableCards = TAROT_DECK.filter(c => !input.allDrawnCardNames.includes(c));
         if (availableCards.length >= decision.cardsToDraw) {
             const drawn = await drawCards(decision.cardsToDraw, availableCards);
