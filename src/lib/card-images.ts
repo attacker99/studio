@@ -5,11 +5,11 @@ export function slugify(text: string): string {
   return text
     .toString()
     .toLowerCase()
-    .replace(/\s+/g, '-') // Replace spaces with -
-    .replace(/[^\w\-]+/g, '') // Remove all non-word chars
-    .replace(/\-\-+/g, '-') // Replace multiple - with single -
-    .replace(/^-+/, '') // Trim - from start of text
-    .replace(/-+$/, ''); // Trim - from end of text
+    .replace(/\s+/g, '_') // Replace spaces with _
+    .replace(/[^\w_]+/g, '') // Remove all non-word chars except underscore
+    .replace(/__+/g, '_') // Replace multiple _ with single _
+    .replace(/^_+/, '') // Trim _ from start of text
+    .replace(/_+$/, ''); // Trim _ from end of text
 }
 
 const cardNames = [
@@ -33,8 +33,8 @@ const cardNames = [
 
 // This creates an object that maps each card name to its corresponding image file path.
 // The images should be placed in the `public/images/tarot/` directory.
-// For example, the image for 'The Fool' should be at `public/images/tarot/the-fool.png`.
-// You can use the Image Generator page at /admin/image-generator to create these images.
+// For example, the image for 'The Fool' should be at `public/images/tarot/the_fool.png`.
+// The app is now configured to use these local images.
 export const cardImageMap: { [key: string]: string } = cardNames.reduce((acc, cardName) => {
   const imageUrl = `/images/tarot/${slugify(cardName)}.png`;
   // The Next.js image component will show the alt text if the image is missing.
