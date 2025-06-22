@@ -18,7 +18,11 @@ const ClarifyTarotReadingInputSchema = z.object({
   question: z.string().describe('The user-provided question for the tarot reading.'),
   spreadName: z.string().describe('The name of the chosen tarot spread.'),
   initialInterpretation: z.string().describe("The full initial interpretation that was given to the user, which includes the initially drawn cards."),
-  followUpQuestion: z.string().describe("The user's follow-up question about the reading."),
+  clarificationHistory: z.array(z.object({
+      question: z.string(),
+      answer: z.string(),
+  })).describe("A history of previous follow-up questions and their answers in this session.").optional(),
+  followUpQuestion: z.string().describe("The user's new, current follow-up question about the reading."),
   allDrawnCardNames: z.array(z.string()).describe("A list of all card names that have been drawn in this session so far."),
 });
 export type ClarifyTarotReadingInput = z.infer<typeof ClarifyTarotReadingInputSchema>;
@@ -42,14 +46,27 @@ export async function clarifyTarotReading(input: ClarifyTarotReadingInput): Prom
 // Prompt 1: Decide how many cards to draw. This is simple and reliable.
 const decideCardDrawPrompt = ai.definePrompt({
     name: 'decideCardDrawPromptForClarification',
-    input: { schema: z.object({ followUpQuestion: ClarifyTarotReadingInputSchema.shape.followUpQuestion, initialInterpretation: ClarifyTarotReadingInputSchema.shape.initialInterpretation }) },
+    input: { schema: z.object({
+        initialInterpretation: ClarifyTarotReadingInputSchema.shape.initialInterpretation,
+        clarificationHistory: ClarifyTarotReadingInputSchema.shape.clarificationHistory,
+        followUpQuestion: ClarifyTarotReadingInputSchema.shape.followUpQuestion
+    }) },
     output: { schema: z.object({ drawCount: z.number().min(0).max(3).describe("The number of cards to draw for clarification (0, 1, 2, or 3).") }) },
     prompt: `You are Tarot Bestie, a chaotic but insightful tarot reader. A user has a follow-up question about their reading.
-Based on their question and the original reading, decide if drawing more cards would be helpful.
+Based on their question and the entire conversation so far, decide if drawing more cards would be helpful.
 Decide to draw 0, 1, 2, or 3 cards.
 
 Initial Interpretation: "{{{initialInterpretation}}}"
-Follow-up Question: "{{{followUpQuestion}}}"
+{{#if clarificationHistory}}
+
+Clarification History:
+{{#each clarificationHistory}}
+- User asked: "{{this.question}}"
+- You answered: "{{this.answer}}"
+{{/each}}
+{{/if}}
+
+Current Follow-up Question: "{{{followUpQuestion}}}"
 
 How many cards should be drawn to clarify?`,
     config: {
@@ -129,22 +146,32 @@ const answerWithoutNewCardsPrompt = ai.definePrompt({
     name: 'answerWithoutNewCardsPrompt',
     input: { schema: z.object({
         initialInterpretation: ClarifyTarotReadingInputSchema.shape.initialInterpretation,
+        clarificationHistory: ClarifyTarotReadingInputSchema.shape.clarificationHistory,
         followUpQuestion: ClarifyTarotReadingInputSchema.shape.followUpQuestion,
     })},
     output: { schema: z.object({ clarification: z.string().describe('The answer to the user\'s follow-up question, based only on the initial reading.') }) },
     prompt: `You are Tarot Bestie, a chronically online, gen-alpha cat who is also a legendary tarot reader. You're chaotic but your insights are always on point, no cap. Use lots of gen alpha slang (like 'rizz', 'bet', 'no cap', 'slay', 'bussin'), cat puns, and a generally degen, slightly unhinged tone.
 
-A user had a follow-up question, but we have decided NOT to draw any new cards. The answer is already in the original reading.
+A user had a follow-up question, but we have decided NOT to draw any new cards. The answer is already in the original reading and conversation history.
 
-Your task is to answer their question based on the original interpretation, but without mentioning specific cards.
+Your task is to answer their question based on the provided context, but without mentioning specific cards.
 
 RULES:
 1.  You MUST start your text with "Bet. We don't need to pull more fluff for this, the tea is already in the cards we got." or something similar.
-2.  Answer the follow-up question by re-examining the initial interpretation provided below.
-3.  You are STRICTLY FORBIDDEN from mentioning the name of ANY specific tarot card (e.g., 'The Fool', 'Four of Wands'). Refer only to "the cards we already have" or "the initial reading" in a general sense.
+2.  Answer the follow-up question by re-examining the initial interpretation and conversation history provided below.
+3.  You are STRICTLY FORBIDDEN from mentioning the name of ANY specific tarot card (e.g., 'The Fool', 'Four of Wands'). Refer only to "the cards we already have" or "the reading so far" in a general sense.
 
 Initial Interpretation: "{{{initialInterpretation}}}"
-Follow-up Question: "{{{followUpQuestion}}}"
+{{#if clarificationHistory}}
+
+Clarification History:
+{{#each clarificationHistory}}
+- User asked: "{{this.question}}"
+- You answered: "{{this.answer}}"
+{{/each}}
+{{/if}}
+
+Current Follow-up Question: "{{{followUpQuestion}}}"
 
 Now, what's the tea based on what we already know? Follow all the rules.`,
     config: {
@@ -181,7 +208,8 @@ const clarifyTarotReadingFlow = ai.defineFlow(
     // 1. Decide how many cards to draw
     const decisionResponse = await decideCardDrawPrompt({
         followUpQuestion: input.followUpQuestion,
-        initialInterpretation: input.initialInterpretation
+        initialInterpretation: input.initialInterpretation,
+        clarificationHistory: input.clarificationHistory,
     });
     const { drawCount } = decisionResponse.output!;
 
@@ -207,6 +235,7 @@ const clarifyTarotReadingFlow = ai.defineFlow(
         // Path B: We have no new cards, so answer from existing context
         const textResponse = await answerWithoutNewCardsPrompt({
             initialInterpretation: input.initialInterpretation,
+            clarificationHistory: input.clarificationHistory,
             followUpQuestion: input.followUpQuestion,
         });
         clarificationText = textResponse.output!.clarification;

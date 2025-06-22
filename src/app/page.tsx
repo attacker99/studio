@@ -28,6 +28,7 @@ type CardWithImage = {
   positionLabel?: string;
 };
 type ClarificationRound = {
+  question: string;
   text: string;
   cards: CardWithImage[];
 }
@@ -143,11 +144,17 @@ export default function Home() {
     }
     setIsClarifying(true);
 
+    const clarificationHistory = clarificationRounds.map(round => ({
+      question: round.question,
+      answer: round.text,
+    }));
+
     try {
       const result: ClarifyTarotReadingOutput = await clarifyTarotReading({
         question,
         spreadName: confirmedSpread.suggestedSpread,
         initialInterpretation: readingResult.interpretation,
+        clarificationHistory,
         followUpQuestion,
         allDrawnCardNames,
       });
@@ -177,7 +184,7 @@ export default function Home() {
         }
       }
 
-      setClarificationRounds(prev => [...prev, { text: result.clarification, cards: newCardsWithImages }]);
+      setClarificationRounds(prev => [...prev, { question: followUpQuestion, text: result.clarification, cards: newCardsWithImages }]);
       setFollowUpQuestion('');
 
     } catch (error) {
@@ -357,6 +364,14 @@ export default function Home() {
 
               {clarificationRounds.map((round, roundIndex) => (
                 <div key={`clarification-${roundIndex}`} className="space-y-4 animate-deal-card">
+                  
+                  <Card className="bg-primary/10 border-primary/20">
+                    <CardHeader className="pb-4">
+                        <CardDescription>You asked...</CardDescription>
+                        <CardTitle className="font-headline text-lg text-primary-foreground/90">&quot;{round.question}&quot;</CardTitle>
+                    </CardHeader>
+                  </Card>
+                  
                   {round.cards.length > 0 && (
                      <div className="bg-card/20 backdrop-blur-sm rounded-lg p-4 md:p-6 w-full">
                         <h3 className="font-headline text-2xl text-accent text-glow mb-4 text-center">Clarifying Cards</h3>
