@@ -394,6 +394,24 @@ export default function Home() {
                   ))}
                 </div>
               )}
+              
+              {isClarifying && (
+                <Card className="bg-card/70 backdrop-blur-sm animate-pulse">
+                  <CardHeader>
+                    <CardTitle className="font-headline text-xl flex items-center gap-3">
+                      <Sparkles className="text-accent h-5 w-5" />
+                      The kitty is thinking...
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="h-4 bg-muted rounded w-3/4"></div>
+                      <div className="h-4 bg-muted rounded w-full"></div>
+                      <div className="h-4 bg-muted rounded w-2/3"></div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {revealedCards.slice(0, initialCardCount).every(r => r) && readingResult.interpretation && (
                 <Card className="bg-card/70 backdrop-blur-sm animate-deal-card" style={{ animationDelay: `${readingResult.cards.length * 0.1 + 0.7}s`}}>
