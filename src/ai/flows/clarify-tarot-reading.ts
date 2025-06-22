@@ -88,7 +88,7 @@ How many cards should be drawn to clarify?`,
           },
           {
             category: 'HARM_CATEGORY_HARASSMENT',
-            threshold: 'BLOCK_ONLY_HIGH',
+            threshold: 'BLOCK_NONE',
           },
           {
             category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
@@ -136,7 +136,7 @@ Now, spill the tea, what do these new cards mean?`,
           },
           {
             category: 'HARM_CATEGORY_HARASSMENT',
-            threshold: 'BLOCK_ONLY_HIGH',
+            threshold: 'BLOCK_NONE',
           },
           {
             category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
@@ -197,7 +197,7 @@ Now, what's the tea based on what we already know? Follow all the rules.`,
           },
           {
             category: 'HARM_CATEGORY_HARASSMENT',
-            threshold: 'BLOCK_ONLY_HIGH',
+            threshold: 'BLOCK_NONE',
           },
           {
             category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
