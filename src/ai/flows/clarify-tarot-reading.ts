@@ -55,36 +55,34 @@ How many cards should be drawn to clarify?`,
 });
 
 
-// Prompt 2: Generate the full, structured response object.
-const generateClarificationPrompt = ai.definePrompt({
-    name: 'generateClarificationPrompt',
+// Prompt 2: Generate only the clarification text.
+const generateClarificationTextPrompt = ai.definePrompt({
+    name: 'generateClarificationTextPrompt',
     input: { schema: z.object({
         question: ClarifyTarotReadingInputSchema.shape.question,
         spreadName: ClarifyTarotReadingInputSchema.shape.spreadName,
         initialInterpretation: ClarifyTarotReadingInputSchema.shape.initialInterpretation,
         followUpQuestion: ClarifyTarotReadingInputSchema.shape.followUpQuestion,
-        cardsToInterpret: z.array(CardDrawnSchema).describe("The new cards that were just drawn for clarification. This can be an empty array."),
+        cardsToInterpretJson: z.string().describe("A JSON string representing the new cards that were just drawn for clarification. This will be an empty array '[]' if no new cards were drawn."),
     })},
-    output: { schema: ClarifyTarotReadingOutputSchema },
+    output: { schema: z.object({ clarification: z.string().describe('The answer to the user\'s follow-up question.') }) },
     prompt: `You are Tarot Bestie, a chronically online, gen-alpha cat who is also a legendary tarot reader. You're chaotic but your insights are always on point, no cap. Use lots of gen alpha slang (like 'rizz', 'bet', 'no cap', 'slay', 'bussin'), cat puns, and a generally degen, slightly unhinged tone.
 
-A user has a follow-up question. We have already programmatically drawn the cards listed in \`cardsToInterpret\`. This array might be empty.
+A user has a follow-up question. We have already programmatically drawn the cards, which are provided as a JSON string. This might be an empty array.
 
-Your task is to generate a complete JSON response object with two fields: \`clarification\` and \`cardsDrawn\`.
+Your task is to generate ONLY the clarification text.
 
-1.  The \`cardsDrawn\` field in your JSON output MUST be an exact, verbatim copy of the provided \`cardsToInterpret\` array. Do not add, remove, or alter any cards.
-2.  The \`clarification\` field must be your text interpretation.
-    -   If \`cardsToInterpret\` IS EMPTY, start your text with "Bet. We don't need to pull more fluff for this, the tea is already in the cards we got." or something similar. Then, answer the follow-up question by referencing only the initial interpretation.
-    -   If \`cardsToInterpret\` IS NOT EMPTY, start your text with "The plot thickens!" or a similar cat-like observation. Then, for each card, explain its meaning in relation to the question. Conclude with a summary. Your interpretation text MUST focus exclusively on the cards provided in \`cardsToInterpret\`.
+-   If the cards JSON IS EMPTY ('[]'), start your text with "Bet. We don't need to pull more fluff for this, the tea is already in the cards we got." or something similar. Then, answer the follow-up question by referencing only the initial interpretation.
+-   If the cards JSON IS NOT EMPTY, start your text with "The plot thickens!" or a similar cat-like observation. Then, for each card, explain its meaning in relation to the question. Conclude with a summary. Your interpretation text MUST focus exclusively on the cards provided.
 
 CONTEXT
 - Original Question: "{{{question}}}"
 - Spread: "{{{spreadName}}}"
 - Initial Interpretation: "{{{initialInterpretation}}}"
 - Follow-up Question: "{{{followUpQuestion}}}"
-- Programmatically Drawn Cards to Interpret (cardsToInterpret): {{jsonStringify cardsToInterpret}}
+- Programmatically Drawn Cards to Interpret (JSON): {{{cardsToInterpretJson}}}
 
-Now, generate the full JSON output object.`
+Now, provide just the clarification text.`
 });
 
 
@@ -112,13 +110,19 @@ const clarifyTarotReadingFlow = ai.defineFlow(
         drawnCards = actuallyDrawn.map(c => ({ cardName: c.name, reversed: c.reversed }));
     }
 
-    // 3. Generate the final, structured response object.
-    const finalResponse = await generateClarificationPrompt({
-        ...input,
-        cardsToInterpret: drawnCards,
+    // 3. Generate the clarification text from the AI.
+    const textResponse = await generateClarificationTextPrompt({
+        question: input.question,
+        spreadName: input.spreadName,
+        initialInterpretation: input.initialInterpretation,
+        followUpQuestion: input.followUpQuestion,
+        cardsToInterpretJson: JSON.stringify(drawnCards),
     });
-    
-    // 4. Return the structured response from the AI.
-    return finalResponse.output!;
+
+    // 4. Assemble the final structured response and return it.
+    return {
+        clarification: textResponse.output!.clarification,
+        cardsDrawn: drawnCards,
+    };
   }
 );
