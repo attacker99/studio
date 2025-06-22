@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -45,25 +45,6 @@ export default function Home() {
   const [isClarifying, setIsClarifying] = useState(false);
 
   const { toast } = useToast();
-
-  useEffect(() => {
-    if (step === 'reading' && readingResult && revealedCards.some(c => !c)) {
-      const revealTimer = setTimeout(() => {
-        readingResult.cards.forEach((_, index) => {
-          setTimeout(() => {
-            setRevealedCards(prev => {
-              const newRevealed = [...prev];
-              if (index < newRevealed.length && !newRevealed[index]) {
-                  newRevealed[index] = true;
-              }
-              return newRevealed;
-            });
-          }, index * 300);
-        });
-      }, 700); // Wait for deal animation to finish
-      return () => clearTimeout(revealTimer);
-    }
-  }, [step, readingResult, revealedCards]);
 
   const handleQuestionSubmit = async () => {
     if (!question.trim()) {
@@ -109,7 +90,7 @@ export default function Home() {
         }
 
         const drawnCardsResult = await drawCards(totalCardCount);
-        setRevealedCards(new Array(drawnCardsResult.length).fill(false));
+        setRevealedCards(new Array(drawnCardsResult.length).fill(true));
         
         const spreadPartsForInterpretation: InterpretTarotCardsInput['spreadParts'] = [];
         let cardIndex = 0;
@@ -192,7 +173,7 @@ export default function Home() {
           if (!prev) return null;
           return { ...prev, cards: [...prev.cards, ...newCardsWithImages] };
         });
-        setRevealedCards(prev => [...prev, ...new Array(result.drawnCards.length).fill(true)]);
+        setRevealedCards(prev => [...prev, ...new Array(result.drawnCards!.length).fill(true)]);
       }
 
       setClarificationHistory(prev => [...prev, result.clarification]);
@@ -230,7 +211,7 @@ export default function Home() {
         return (
           <Card className="w-full max-w-2xl bg-card/70 backdrop-blur-sm">
             <CardHeader className="text-center">
-              <CardTitle className="font-headline text-3xl md:text-4xl">Spill the Tea to the Void Kitty</CardTitle>
+              <CardTitle className="font-headline text-3xl md:text-4xl">Spill the Tea to Your Tarot Bestie</CardTitle>
               <CardDescription>what's the 411, kitten? no cap.</CardDescription>
             </CardHeader>
             <CardContent>
@@ -423,7 +404,7 @@ export default function Home() {
                 <Card className="bg-card/70 backdrop-blur-sm animate-deal-card" style={{ animationDelay: `${readingResult.cards.length * 0.1 + 0.7}s`}}>
                   <CardHeader>
                     <CardTitle className="font-headline text-xl">Go Deeper</CardTitle>
-                    <CardDescription>Ask the void kitty a follow-up question. It might even draw more cards if the vibe is right.</CardDescription>
+                    <CardDescription>Ask your bestie a follow-up question. It might even draw more cards if the vibe is right.</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="grid w-full gap-4">
@@ -472,9 +453,9 @@ export default function Home() {
         <header className="flex flex-col items-center text-center">
             <Logo />
             <h1 className="font-headline text-5xl md:text-7xl font-bold tracking-tighter text-glow">
-            Degen Tarot Cat
+            Tarot Bestie
             </h1>
-            <p className="text-muted-foreground mt-2">rizz-powered readings for the chronically online</p>
+            <p className="text-muted-foreground mt-2">Your gen-alpha bestie for chaotic-good tarot readings</p>
         </header>
         {renderContent()}
       </main>
