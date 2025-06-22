@@ -27,6 +27,10 @@ type CardWithImage = {
   id: string;
   positionLabel?: string;
 };
+type ClarificationRound = {
+  text: string;
+  cards: CardWithImage[];
+}
 
 export default function Home() {
   const [step, setStep] = useState<Step>('question');
@@ -35,13 +39,12 @@ export default function Home() {
   const [selectedSpreadIndex, setSelectedSpreadIndex] = useState<number | null>(null);
   const [confirmedSpread, setConfirmedSpread] = useState<SingleSpreadSuggestion | null>(null);
   const [readingResult, setReadingResult] = useState<{ cards: CardWithImage[]; interpretation: string } | null>(null);
-  const [revealedCards, setRevealedCards] = useState<boolean[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [isPending, startTransition] = useTransition();
 
   const [followUpQuestion, setFollowUpQuestion] = useState('');
-  const [clarificationHistory, setClarificationHistory] = useState<string[]>([]);
+  const [clarificationRounds, setClarificationRounds] = useState<ClarificationRound[]>([]);
   const [isClarifying, setIsClarifying] = useState(false);
   const [allDrawnCardNames, setAllDrawnCardNames] = useState<string[]>([]);
 
@@ -80,7 +83,6 @@ export default function Home() {
     
     setConfirmedSpread(selectedSpread);
     setReadingResult(null);
-    setRevealedCards([]);
 
     startTransition(async () => {
       setLoadingMessage("Drawing cards, interpreting fate...");
@@ -92,7 +94,6 @@ export default function Home() {
         }
 
         const drawnCardsResult = await drawCards(totalCardCount);
-        setRevealedCards(new Array(drawnCardsResult.length).fill(true));
         
         const spreadPartsForInterpretation: InterpretTarotCardsInput['spreadParts'] = [];
         let cardIndex = 0;
@@ -151,8 +152,9 @@ export default function Home() {
         allDrawnCardNames,
       });
 
+      let newCardsWithImages: CardWithImage[] = [];
       if (result.cardsDrawn && result.cardsDrawn.length > 0) {
-        const newCardsWithImages: CardWithImage[] = result.cardsDrawn.map((card, index) => {
+        newCardsWithImages = result.cardsDrawn.map((card, index) => {
           const cardImage = cardImageMap[card.cardName];
 
           if (!cardImage) {
@@ -164,27 +166,20 @@ export default function Home() {
             name: card.cardName,
             reversed: card.reversed,
             image: cardImage,
-            id: `clarify-${clarificationHistory.length}-${index}-${card.cardName}`,
+            id: `clarify-${clarificationRounds.length}-${index}-${card.cardName}`,
             positionLabel: 'Clarification',
           };
         }).filter((c): c is CardWithImage => c !== null);
 
-
         if (newCardsWithImages.length > 0) {
-          setReadingResult(prev => {
-            if (!prev) return null;
-            return { ...prev, cards: [...prev.cards, ...newCardsWithImages] };
-          });
-          
-          setRevealedCards(prev => [...prev, ...new Array(newCardsWithImages.length).fill(true)]);
-          
           const newDrawnCardNames = newCardsWithImages.map(c => c.name);
           setAllDrawnCardNames(prev => [...prev, ...newDrawnCardNames]);
         }
       }
 
-      setClarificationHistory(prev => [...prev, result.clarification]);
+      setClarificationRounds(prev => [...prev, { text: result.clarification, cards: newCardsWithImages }]);
       setFollowUpQuestion('');
+
     } catch (error) {
       console.error(error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
@@ -203,9 +198,8 @@ export default function Home() {
     setSelectedSpreadIndex(null);
     setConfirmedSpread(null);
     setLoadingMessage('');
-    setRevealedCards([]);
     setFollowUpQuestion('');
-    setClarificationHistory([]);
+    setClarificationRounds([]);
     setAllDrawnCardNames([]);
   };
 
@@ -309,10 +303,7 @@ export default function Home() {
 
       case 'reading': {
         if (!readingResult || !confirmedSpread) return null;
-
-        const initialCardCount = confirmedSpread.parts.reduce((sum, part) => sum + part.positions.length, 0);
-        const initialCards = readingResult.cards.slice(0, initialCardCount);
-        const clarifyingCards = readingResult.cards.slice(initialCardCount);
+        
         let cardsRendered = 0;
 
         return (
@@ -324,9 +315,8 @@ export default function Home() {
 
               <div className="flex flex-col gap-4 md:gap-6 justify-center">
                 {confirmedSpread.parts.map((part, partIndex) => {
-                  const cardsForPart = initialCards.slice(cardsRendered, cardsRendered + part.positions.length);
+                  const cardsForPart = readingResult.cards.slice(cardsRendered, cardsRendered + part.positions.length);
                   const positionsForPart = part.positions;
-                  const partStartIndex = cardsRendered;
                   cardsRendered += part.positions.length;
 
                   return (
@@ -334,15 +324,14 @@ export default function Home() {
                       <h3 className="font-headline text-2xl text-accent text-glow mb-4 text-center">{part.label}</h3>
                       <div className="flex flex-row flex-wrap gap-4 md:gap-6 justify-center">
                         {cardsForPart.map((card, indexInPart) => {
-                          const overallIndex = partStartIndex + indexInPart;
                           return (
                             <TarotCard
                               key={card.id}
                               cardName={card.name}
                               imageUrl={card.image}
-                              isRevealed={revealedCards[overallIndex]}
+                              isRevealed={true}
                               isReversed={card.reversed}
-                              animationDelay={`${overallIndex * 0.1 + 0.3}s`}
+                              animationDelay={`${(cardsRendered + indexInPart) * 0.1 + 0.3}s`}
                               positionLabel={positionsForPart[indexInPart]}
                             />
                           );
@@ -351,62 +340,54 @@ export default function Home() {
                     </div>
                   );
                 })}
-
-                {clarifyingCards.length > 0 && (
-                   <div key="clarifying-cards" className="bg-card/20 backdrop-blur-sm rounded-lg p-4 md:p-6 w-full animate-deal-card" style={{ animationDelay: '0.2s'}}>
-                      <h3 className="font-headline text-2xl text-accent text-glow mb-4 text-center">Clarifying Cards</h3>
-                      <div className="flex flex-row flex-wrap gap-4 md:gap-6 justify-center">
-                          {clarifyingCards.map((card, index) => {
-                              const overallIndex = initialCardCount + index;
-                              return (
-                                  <TarotCard
-                                      key={card.id}
-                                      cardName={card.name}
-                                      imageUrl={card.image}
-                                      isRevealed={revealedCards[overallIndex]}
-                                      isReversed={card.reversed}
-                                      animationDelay={`${(index * 0.1) + 0.1}s`}
-                                      positionLabel={card.positionLabel || "Clarification"}
-                                  />
-                              );
-                          })}
-                      </div>
-                   </div>
-                )}
               </div>
 
-              {revealedCards.every(r => r) && readingResult.interpretation && (
-                 <Card className="bg-card/70 backdrop-blur-sm animate-deal-card" style={{ animationDelay: `${initialCards.length * 0.1 + 0.5}s`}}>
-                  <CardHeader>
-                    <CardTitle className="font-headline text-3xl flex items-center gap-3">
-                      <Sparkles className="text-accent"/>
-                      The Lowdown
-                    </CardTitle>
-                    <CardDescription>{confirmedSpread?.suggestedSpread}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="prose prose-invert max-w-none text-foreground/90 font-body text-base">
-                    <ReactMarkdown>{readingResult.interpretation}</ReactMarkdown>
-                  </CardContent>
-                </Card>
-              )}
+              <Card className="bg-card/70 backdrop-blur-sm animate-deal-card" style={{ animationDelay: `${readingResult.cards.length * 0.1 + 0.5}s`}}>
+                <CardHeader>
+                  <CardTitle className="font-headline text-3xl flex items-center gap-3">
+                    <Sparkles className="text-accent"/>
+                    The Lowdown
+                  </CardTitle>
+                  <CardDescription>{confirmedSpread?.suggestedSpread}</CardDescription>
+                </CardHeader>
+                <CardContent className="prose prose-invert max-w-none text-foreground/90 font-body text-base">
+                  <ReactMarkdown>{readingResult.interpretation}</ReactMarkdown>
+                </CardContent>
+              </Card>
 
-              {clarificationHistory.length > 0 && (
-                <div className="space-y-4">
-                  {clarificationHistory.map((clarification, index) => (
-                    <Card key={index} className="bg-card/70 backdrop-blur-sm animate-deal-card">
-                       <CardHeader>
-                        <CardTitle className="font-headline text-xl flex items-center gap-3">
-                          <Sparkles className="text-accent h-5 w-5"/>
-                          The Plot Thickens...
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="prose prose-invert max-w-none text-foreground/90 font-body text-base">
-                         <ReactMarkdown>{clarification}</ReactMarkdown>
-                      </CardContent>
-                    </Card>
-                  ))}
+              {clarificationRounds.map((round, roundIndex) => (
+                <div key={`clarification-${roundIndex}`} className="space-y-4 animate-deal-card">
+                  {round.cards.length > 0 && (
+                     <div className="bg-card/20 backdrop-blur-sm rounded-lg p-4 md:p-6 w-full">
+                        <h3 className="font-headline text-2xl text-accent text-glow mb-4 text-center">Clarifying Cards</h3>
+                        <div className="flex flex-row flex-wrap gap-4 md:gap-6 justify-center">
+                            {round.cards.map((card) => (
+                                <TarotCard
+                                    key={card.id}
+                                    cardName={card.name}
+                                    imageUrl={card.image}
+                                    isRevealed={true}
+                                    isReversed={card.reversed}
+                                    animationDelay={`0.1s`}
+                                    positionLabel={card.positionLabel || "Clarification"}
+                                />
+                            ))}
+                        </div>
+                     </div>
+                  )}
+                   <Card className="bg-card/70 backdrop-blur-sm">
+                     <CardHeader>
+                      <CardTitle className="font-headline text-xl flex items-center gap-3">
+                        <Sparkles className="text-accent h-5 w-5"/>
+                        The Plot Thickens...
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="prose prose-invert max-w-none text-foreground/90 font-body text-base">
+                       <ReactMarkdown>{round.text}</ReactMarkdown>
+                    </CardContent>
+                  </Card>
                 </div>
-              )}
+              ))}
               
               {isClarifying && (
                 <Card className="bg-card/70 backdrop-blur-sm animate-pulse">
@@ -426,38 +407,36 @@ export default function Home() {
                 </Card>
               )}
 
-              {revealedCards.slice(0, initialCardCount).every(r => r) && readingResult.interpretation && (
-                <Card className="bg-card/70 backdrop-blur-sm animate-deal-card" style={{ animationDelay: `${readingResult.cards.length * 0.1 + 0.7}s`}}>
-                  <CardHeader>
-                    <CardTitle className="font-headline text-xl">Got more questions? The kitty is listening.</CardTitle>
-                    <CardDescription>Ask your bestie a follow-up question. It might even draw more cards if the vibe is right.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid w-full gap-4">
-                      <Textarea
-                        placeholder="e.g., 'tell me more about the tower card' or 'what should I watch out for?'"
-                        value={followUpQuestion}
-                        onChange={(e) => setFollowUpQuestion(e.target.value)}
-                        rows={3}
-                        className="bg-background/80"
-                        disabled={isClarifying}
-                      />
-                      <Button
-                        onClick={handleFollowUpSubmit}
-                        disabled={isClarifying || !followUpQuestion.trim()}
-                        size="lg"
-                      >
-                        {isClarifying ? (
-                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        ) : (
-                          <Sparkles className="mr-2 h-5 w-5" />
-                        )}
-                        {isClarifying ? 'Consulting the cosmic litterbox...' : 'Ask the kitty'}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              <Card className="bg-card/70 backdrop-blur-sm animate-deal-card" style={{ animationDelay: `${readingResult.cards.length * 0.1 + 0.7}s`}}>
+                <CardHeader>
+                  <CardTitle className="font-headline text-xl">Got more questions? The kitty is listening.</CardTitle>
+                  <CardDescription>Ask your bestie a follow-up question. It might even draw more cards if the vibe is right.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid w-full gap-4">
+                    <Textarea
+                      placeholder="e.g., 'tell me more about the tower card' or 'what should I watch out for?'"
+                      value={followUpQuestion}
+                      onChange={(e) => setFollowUpQuestion(e.target.value)}
+                      rows={3}
+                      className="bg-background/80"
+                      disabled={isClarifying}
+                    />
+                    <Button
+                      onClick={handleFollowUpSubmit}
+                      disabled={isClarifying || !followUpQuestion.trim()}
+                      size="lg"
+                    >
+                      {isClarifying ? (
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      ) : (
+                        <Sparkles className="mr-2 h-5 w-5" />
+                      )}
+                      {isClarifying ? 'Consulting the cosmic litterbox...' : 'Ask the kitty'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
 
               <div className="text-center">
                 <Button onClick={handleReset} size="lg" variant="outline">
