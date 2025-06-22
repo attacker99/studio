@@ -153,8 +153,8 @@ Initial Interpretation: "{{{initialInterpretation}}}"
 Conversation History:
 {{#each clarificationHistory}}
 - User previously asked: "{{this.question}}"
-{{#if this.cardsDrawn}}
-- You drew these cards in response: {{#each this.cardsDrawn}}{{{this.cardName}}}{{#if this.reversed}} (Reversed){{/if}}{{#unless @last}}, {{/unless}}{{/each}}.
+{{#if this.cardsDrawn.length}}
+- You drew cards in response to this question.
 {{else}}
 - You drew no new cards in response.
 {{/if}}
