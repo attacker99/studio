@@ -423,10 +423,10 @@ export default function Home() {
                 </Card>
               )}
 
-              {clarificationRounds.length < 2 ? (
+              {clarificationRounds.length < 1 ? (
                 <Card className="bg-card/70 backdrop-blur-sm animate-deal-card" style={{ animationDelay: `${readingResult.cards.length * 0.1 + 0.7}s`}}>
                   <CardHeader>
-                    <CardTitle className="font-headline text-xl">Ask a Follow-Up Question ({clarificationRounds.length + 1}/2)</CardTitle>
+                    <CardTitle className="font-headline text-xl">Ask a Follow-Up Question</CardTitle>
                     <CardDescription>What else is on your mind? The kitty is listening.</CardDescription>
                   </CardHeader>
                   <CardContent>
