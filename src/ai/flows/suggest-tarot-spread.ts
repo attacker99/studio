@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview This file defines a Genkit flow for suggesting a tarot spread based on a user's question.
@@ -117,15 +116,10 @@ const suggestTarotSpreadFlow = ai.defineFlow(
     outputSchema: SuggestTarotSpreadOutputSchema,
   },
   async input => {
-    try {
-        const {output} = await suggestTarotSpreadPrompt(input);
-        if (!output) {
-          throw new Error("The AI failed to suggest a spread. Its response may have been blocked for safety reasons or was empty.");
-        }
-        return output;
-    } catch (error) {
-        console.error("Error in suggestTarotSpreadFlow calling Gemini:", error);
-        throw new Error(`Failed to suggest spread: ${error instanceof Error ? error.message : String(error)}`);
+    const {output} = await suggestTarotSpreadPrompt(input);
+    if (!output) {
+      throw new Error("The AI failed to suggest a spread. Its response may have been blocked for safety reasons or was empty.");
     }
+    return output;
   }
 );

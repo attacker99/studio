@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview Provides follow-up clarification for a tarot reading.
@@ -191,18 +190,12 @@ const clarifyTarotReadingFlow = ai.defineFlow(
     const availableCardsCount = availableCards.length;
     
     // 1. Decide how many cards to draw, telling the AI how many are left.
-    let decisionResponse;
-    try {
-        decisionResponse = await decideCardDrawPrompt({
-            followUpQuestion: input.followUpQuestion,
-            initialInterpretation: input.initialInterpretation,
-            clarificationHistory: input.clarificationHistory,
-            availableCardsCount: availableCardsCount,
-        });
-    } catch (error) {
-        console.error("Error in clarifyTarotReadingFlow (decideCardDrawPrompt) calling Gemini:", error);
-        throw new Error(`AI failed to decide card draw: ${error instanceof Error ? error.message : String(error)}`);
-    }
+    const decisionResponse = await decideCardDrawPrompt({
+        followUpQuestion: input.followUpQuestion,
+        initialInterpretation: input.initialInterpretation,
+        clarificationHistory: input.clarificationHistory,
+        availableCardsCount: availableCardsCount,
+    });
     
     if (!decisionResponse.output) {
       throw new Error("The AI failed to decide how many cards to draw. Its response may have been blocked or malformed.");
@@ -228,16 +221,10 @@ const clarifyTarotReadingFlow = ai.defineFlow(
     let clarificationText = '';
     if (drawnCards.length > 0) {
         // Path A: We have new cards to interpret
-        let textResponse;
-        try {
-            textResponse = await interpretNewCardsPrompt({
-                followUpQuestion: input.followUpQuestion,
-                cardsToInterpret: drawnCards,
-            });
-        } catch (error) {
-            console.error("Error in clarifyTarotReadingFlow (interpretNewCardsPrompt) calling Gemini:", error);
-            throw new Error(`AI failed to interpret new cards: ${error instanceof Error ? error.message : String(error)}`);
-        }
+        const textResponse = await interpretNewCardsPrompt({
+            followUpQuestion: input.followUpQuestion,
+            cardsToInterpret: drawnCards,
+        });
 
         if (!textResponse.output) {
             throw new Error("The AI failed to generate an interpretation for the new cards. Its response may have been blocked or malformed.");
@@ -245,17 +232,11 @@ const clarifyTarotReadingFlow = ai.defineFlow(
         clarificationText = textResponse.output.clarification;
     } else {
         // Path B: We have no new cards, so answer from existing context
-        let textResponse;
-        try {
-            textResponse = await answerWithoutNewCardsPrompt({
-                initialInterpretation: input.initialInterpretation,
-                clarificationHistory: input.clarificationHistory,
-                followUpQuestion: input.followUpQuestion,
-            });
-        } catch(error) {
-            console.error("Error in clarifyTarotReadingFlow (answerWithoutNewCardsPrompt) calling Gemini:", error);
-            throw new Error(`AI failed to generate clarification: ${error instanceof Error ? error.message : String(error)}`);
-        }
+        const textResponse = await answerWithoutNewCardsPrompt({
+            initialInterpretation: input.initialInterpretation,
+            clarificationHistory: input.clarificationHistory,
+            followUpQuestion: input.followUpQuestion,
+        });
         
         if (!textResponse.output) {
             throw new Error("The AI failed to generate a clarification. Its response may have been blocked or malformed.");
