@@ -159,30 +159,21 @@ export default function Home() {
         allDrawnCardNames,
       });
 
-      let newCardsWithImages: CardWithImage[] = [];
-      if (result.cardsDrawn && result.cardsDrawn.length > 0) {
-        newCardsWithImages = result.cardsDrawn.map((card, index) => {
-          const cardImage = cardImageMap[card.cardName];
-
-          if (!cardImage) {
-            console.warn(`No image found for card: "${card.cardName}"`);
-            return null;
-          }
-          
-          return {
-            name: card.cardName,
-            reversed: card.reversed,
-            image: cardImage,
-            id: `clarify-${clarificationRounds.length}-${index}-${card.cardName}`,
-            positionLabel: 'Clarification',
-          };
-        }).filter((c): c is CardWithImage => c !== null);
-
-        if (newCardsWithImages.length > 0) {
-          const newDrawnCardNames = newCardsWithImages.map(c => c.name);
-          setAllDrawnCardNames(prev => [...prev, ...newDrawnCardNames]);
-        }
+      // Update the master list of all drawn cards for the *next* follow-up.
+      // This is the key to maintaining the deck state correctly.
+      if (result.cardsDrawn.length > 0) {
+        const newlyDrawnNames = result.cardsDrawn.map(c => c.cardName);
+        setAllDrawnCardNames(prev => [...prev, ...newlyDrawnNames]);
       }
+      
+      // Prepare the newly drawn cards for rendering in the UI.
+      const newCardsWithImages: CardWithImage[] = result.cardsDrawn.map((card, index) => ({
+        name: card.cardName,
+        reversed: card.reversed,
+        image: cardImageMap[card.cardName],
+        id: `clarify-${clarificationRounds.length}-${index}-${card.cardName}`,
+        positionLabel: 'Clarification',
+      })).filter(card => card.image); // Filter out any cards that might not have an image mapping
 
       setClarificationRounds(prev => [...prev, { question: followUpQuestion, text: result.clarification, cards: newCardsWithImages }]);
       setFollowUpQuestion('');
