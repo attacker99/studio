@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { suggestTarotSpread, type SuggestTarotSpreadOutput, type SingleSpreadSuggestion } from '@/ai/flows/suggest-tarot-spread';
 import { interpretTarotCards, type InterpretTarotCardsInput } from '@/ai/flows/interpret-tarot-cards';
-import { clarifyTarotReading, type ClarifyTarotReadingInput } from '@/ai/flows/clarify-tarot-reading';
+import { clarifyTarotReading } from '@/ai/flows/clarify-tarot-reading';
 import { drawCards } from '@/lib/tarot';
 import { cardImageMap } from '@/lib/card-images';
 import { Loader } from '@/components/ui/loader';
@@ -20,7 +20,7 @@ import { Label } from '@/components/ui/label';
 import ReactMarkdown from 'react-markdown';
 
 type Step = 'question' | 'suggestion' | 'reading';
-type CardWithImage = { name: string; image: string; reversed: boolean; };
+type CardWithImage = { name: string; image: string; reversed: boolean; id: string; };
 
 export default function Home() {
   const [step, setStep] = useState<Step>('question');
@@ -41,13 +41,23 @@ export default function Home() {
   const { toast } = useToast();
 
   useEffect(() => {
+    if (step === 'reading' && readingResult && revealedCards.length < readingResult.cards.length) {
+      // New cards have been added, update revealed state
+      setRevealedCards(prev => [...prev, ...new Array(readingResult.cards.length - prev.length).fill(true)]);
+    }
+  }, [readingResult?.cards.length]);
+
+
+  useEffect(() => {
     if (step === 'reading' && readingResult && revealedCards.some(c => !c)) {
       const revealTimer = setTimeout(() => {
         readingResult.cards.forEach((_, index) => {
           setTimeout(() => {
             setRevealedCards(prev => {
               const newRevealed = [...prev];
-              newRevealed[index] = true;
+              if (!newRevealed[index]) {
+                  newRevealed[index] = true;
+              }
               return newRevealed;
             });
           }, index * 300);
@@ -123,10 +133,11 @@ export default function Home() {
           spreadParts: spreadPartsForInterpretation,
         });
         
-        const cardsWithImages = drawnCardsResult.map((card) => ({
+        const cardsWithImages: CardWithImage[] = drawnCardsResult.map((card, index) => ({
           name: card.name,
           reversed: card.reversed,
           image: cardImageMap[card.name],
+          id: `initial-${index}-${card.name}`,
         }));
 
         setReadingResult({ cards: cardsWithImages, interpretation: interpretationResult.interpretation });
@@ -147,7 +158,7 @@ export default function Home() {
     }
     setIsClarifying(true);
 
-    const spreadPartsForClarification: ClarifyTarotReadingInput['spreadParts'] = [];
+    const spreadPartsForClarification: Omit<Parameters<typeof clarifyTarotReading>[0], 'newlyDrawnCard'>['spreadParts'] = [];
     let cardIndex = 0;
     for (const part of confirmedSpread.parts) {
       const cardsWithPositions = part.positions.map((positionLabel, indexInPart) => {
@@ -169,6 +180,20 @@ export default function Home() {
         initialInterpretation: readingResult.interpretation,
         followUpQuestion,
       });
+
+      if (result.drawnCard) {
+        const newCardWithImage: CardWithImage = {
+          name: result.drawnCard.cardName,
+          reversed: result.drawnCard.reversed,
+          image: cardImageMap[result.drawnCard.cardName],
+          id: `clarify-${clarificationHistory.length}-${result.drawnCard.cardName}`,
+        };
+        setReadingResult(prev => {
+          if (!prev) return null;
+          return { ...prev, cards: [...prev.cards, newCardWithImage] };
+        });
+      }
+
       setClarificationHistory(prev => [...prev, result.clarification]);
       setFollowUpQuestion('');
     } catch (error) {
@@ -303,25 +328,29 @@ export default function Home() {
 
               <div className="flex flex-row flex-wrap gap-4 md:gap-6 justify-center">
                 {(() => {
-                  let cardDrawnIndex = 0;
-                  return confirmedSpread.parts.map((part, partIndex) => {
-                    const cardsForPart = readingResult.cards.slice(
-                      cardDrawnIndex,
-                      cardDrawnIndex + part.positions.length
-                    );
+                  let cardsRendered = 0;
+                  const clarifyingCards: CardWithImage[] = [];
+
+                  // Separate initial spread cards from clarifying cards
+                  const initialCardCount = confirmedSpread.parts.reduce((sum, part) => sum + part.positions.length, 0);
+                  const initialCards = readingResult.cards.slice(0, initialCardCount);
+                  const clarifying = readingResult.cards.slice(initialCardCount);
+
+                  const spreadPartsJsx = confirmedSpread.parts.map((part, partIndex) => {
+                    const cardsForPart = initialCards.slice(cardsRendered, cardsRendered + part.positions.length);
                     const positionsForPart = part.positions;
-                    const partStartIndex = cardDrawnIndex;
-                    cardDrawnIndex += part.positions.length;
+                    const partStartIndex = cardsRendered;
+                    cardsRendered += part.positions.length;
 
                     return (
-                      <div key={partIndex} className="bg-card/20 backdrop-blur-sm rounded-lg p-4 md:p-6 w-full animate-deal-card" style={{ animationDelay: '0.2s'}}>
+                      <div key={`part-${partIndex}`} className="bg-card/20 backdrop-blur-sm rounded-lg p-4 md:p-6 w-full animate-deal-card" style={{ animationDelay: '0.2s'}}>
                         <h3 className="font-headline text-2xl text-accent text-glow mb-4 text-center">{part.label}</h3>
                         <div className="flex flex-row flex-wrap gap-4 md:gap-6 justify-center">
                           {cardsForPart.map((card, indexInPart) => {
                             const overallIndex = partStartIndex + indexInPart;
                             return (
                               <TarotCard
-                                key={card.name + overallIndex}
+                                key={card.id}
                                 cardName={card.name}
                                 imageUrl={card.image}
                                 isRevealed={revealedCards[overallIndex]}
@@ -335,11 +364,35 @@ export default function Home() {
                       </div>
                     );
                   });
+
+                  const clarifyingJsx = clarifying.length > 0 && (
+                     <div key="clarifying-cards" className="bg-card/20 backdrop-blur-sm rounded-lg p-4 md:p-6 w-full animate-deal-card" style={{ animationDelay: '0.2s'}}>
+                        <h3 className="font-headline text-2xl text-accent text-glow mb-4 text-center">Clarifying Cards</h3>
+                        <div className="flex flex-row flex-wrap gap-4 md:gap-6 justify-center">
+                            {clarifying.map((card, index) => {
+                                const overallIndex = initialCardCount + index;
+                                return (
+                                    <TarotCard
+                                        key={card.id}
+                                        cardName={card.name}
+                                        imageUrl={card.image}
+                                        isRevealed={true} // clarifying cards are always revealed
+                                        isReversed={card.reversed}
+                                        animationDelay={`${(index * 0.1) + 0.1}s`}
+                                        positionLabel="Clarification"
+                                    />
+                                );
+                            })}
+                        </div>
+                     </div>
+                  );
+                  
+                  return <>{spreadPartsJsx}{clarifyingJsx}</>;
                 })()}
               </div>
 
               {revealedCards.every(r => r) && readingResult.interpretation && (
-                 <Card className="bg-card/70 backdrop-blur-sm animate-deal-card" style={{ animationDelay: `${readingResult.cards.length * 0.1 + 0.5}s`}}>
+                 <Card className="bg-card/70 backdrop-blur-sm animate-deal-card" style={{ animationDelay: `${initialCardCount * 0.1 + 0.5}s`}}>
                   <CardHeader>
                     <CardTitle className="font-headline text-3xl flex items-center gap-3">
                       <Sparkles className="text-accent"/>
@@ -371,7 +424,7 @@ export default function Home() {
                 </div>
               )}
 
-              {revealedCards.every(r => r) && readingResult.interpretation && (
+              {revealedCards.slice(0, confirmedSpread.parts.reduce((sum, part) => sum + part.positions.length, 0)).every(r => r) && readingResult.interpretation && (
                 <Card className="bg-card/70 backdrop-blur-sm animate-deal-card" style={{ animationDelay: `${readingResult.cards.length * 0.1 + 0.7}s`}}>
                   <CardHeader>
                     <CardTitle className="font-headline text-xl">Go Deeper</CardTitle>

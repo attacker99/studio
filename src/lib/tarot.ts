@@ -28,6 +28,12 @@ function fisherYatesShuffle(deck: string[], randomNumbers: number[]): string[] {
   const shuffledDeck = [...deck];
   let currentIndex = shuffledDeck.length;
 
+  // We need one random number for each card in the deck to be shuffled.
+  // If we don't have enough, something is wrong with the caller.
+  if (randomNumbers.length < shuffledDeck.length) {
+    throw new Error('Insufficient random numbers for shuffling.');
+  }
+
   while (currentIndex !== 0) {
     // Use a pre-fetched random number to pick an element.
     const randomNumber = randomNumbers[shuffledDeck.length - currentIndex];
@@ -43,13 +49,17 @@ function fisherYatesShuffle(deck: string[], randomNumbers: number[]): string[] {
 }
 
 /**
- * Draws a specified number of cards from the tarot deck, with a chance for each to be reversed.
+ * Draws a specified number of cards from a given tarot deck, with a chance for each to be reversed.
  * It will attempt to use a true quantum random number source, retrying indefinitely with exponential backoff if it fails.
  * @param count The number of cards to draw.
+ * @param fromDeck The deck of cards to draw from. Defaults to the full TAROT_DECK.
  * @returns A promise that resolves to an array of card objects, each with a name and a reversed status.
  */
-export async function drawCards(count: number): Promise<Array<{ name: string; reversed: boolean }>> {
-  const deckSize = TAROT_DECK.length;
+export async function drawCards(count: number, fromDeck: string[] = TAROT_DECK): Promise<Array<{ name: string; reversed: boolean }>> {
+  const deckSize = fromDeck.length;
+  if (count > deckSize) {
+    throw new Error('Cannot draw more cards than are available in the deck.');
+  }
   // We need `deckSize` numbers for shuffling and `count` numbers for reversal chance.
   const numbersToFetch = deckSize + count;
   const url = `https://qrng.anu.edu.au/API/jsonI.php?length=${numbersToFetch}&type=uint16`;
@@ -79,7 +89,7 @@ export async function drawCards(count: number): Promise<Array<{ name: string; re
       const shuffleNumbers = quantumRandomNumbers.slice(0, deckSize);
       const reversalNumbers = quantumRandomNumbers.slice(deckSize);
 
-      const shuffledDeck = fisherYatesShuffle(TAROT_DECK, shuffleNumbers);
+      const shuffledDeck = fisherYatesShuffle(fromDeck, shuffleNumbers);
       const drawnCardNames = shuffledDeck.slice(0, count);
 
       const result = drawnCardNames.map((name, index) => ({
