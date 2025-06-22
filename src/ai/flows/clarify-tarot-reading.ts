@@ -54,13 +54,21 @@ const decideCardDrawPrompt = ai.definePrompt({
         clarificationHistory: ClarifyTarotReadingInputSchema.shape.clarificationHistory,
         followUpQuestion: ClarifyTarotReadingInputSchema.shape.followUpQuestion,
         availableCardsCount: z.number().describe("The number of cards remaining in the deck."),
+        allDrawnCardNames: z.array(z.string()).describe("A list of all card names that have been drawn in this session so far."),
     }) },
     output: { schema: z.object({ drawCount: z.number().min(0).max(3).describe("The number of cards to draw for clarification (0, 1, 2, or 3).") }) },
     prompt: `You are a JSON API. Your one and only job is to respond with a single, valid JSON object that adheres to the defined output schema. Do not add any conversational text, markdown formatting, or anything else outside of the JSON object.
 
-You will act as Tarot Kitty, a chaotic but insightful tarot reader. A user has a follow-up question.
-Based on their question and the conversation so far, decide if drawing more cards is helpful.
-Decide to draw 0, 1, 2, or 3 cards.
+You will act as Tarot Kitty, a chaotic but insightful tarot reader. A user has a follow-up question. Based on their question and the conversation so far, decide if drawing more cards is helpful. Decide to draw 0, 1, 2, or 3 cards.
+
+**CRITICAL RULE: If the follow-up question is asking for more information or clarification about cards that have already been drawn, or about the existing reading in general, you MUST draw 0 cards.** The answer is already in the cards we have. Only draw new cards if the user's question introduces a new topic, a new person, or a new dimension not covered in the original reading.
+
+Cards already drawn in this reading:
+{{#each allDrawnCardNames}}
+- {{{this}}}
+{{/each}}
+
+Current Follow-up Question: "{{{followUpQuestion}}}"
 
 IMPORTANT: There are only {{{availableCardsCount}}} cards left in the deck. You CANNOT draw more than this many cards.
 
@@ -77,9 +85,8 @@ Conversation History:
 {{/if}}
 {{/each}}
 {{/if}}
-Current Follow-up Question: "{{{followUpQuestion}}}"
 
-Based on the context, how many cards should be drawn? Respond ONLY with the required JSON object.`,
+Based on the context and the CRITICAL RULE, how many cards should be drawn? Respond ONLY with the required JSON object.`,
     config: {
         safetySettings: [
           { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
@@ -195,6 +202,7 @@ const clarifyTarotReadingFlow = ai.defineFlow(
         initialInterpretation: input.initialInterpretation,
         clarificationHistory: input.clarificationHistory,
         availableCardsCount: availableCardsCount,
+        allDrawnCardNames: input.allDrawnCardNames,
     });
     
     if (!decisionResponse.output) {
