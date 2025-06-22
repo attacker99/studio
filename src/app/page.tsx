@@ -45,7 +45,7 @@ export default function Home() {
       // New cards have been added, update revealed state
       setRevealedCards(prev => [...prev, ...new Array(readingResult.cards.length - prev.length).fill(true)]);
     }
-  }, [readingResult?.cards.length]);
+  }, [readingResult?.cards.length, step, readingResult, revealedCards.length]);
 
 
   useEffect(() => {
@@ -321,6 +321,9 @@ export default function Home() {
         if (!readingResult || !confirmedSpread) return null;
 
         const initialCardCount = confirmedSpread.parts.reduce((sum, part) => sum + part.positions.length, 0);
+        const initialCards = readingResult.cards.slice(0, initialCardCount);
+        const clarifyingCards = readingResult.cards.slice(initialCardCount);
+        let cardsRendered = 0;
 
         return (
             <div className="w-full max-w-6xl space-y-8">
@@ -329,67 +332,56 @@ export default function Home() {
                 <p className="text-muted-foreground max-w-2xl mx-auto">&quot;{question}&quot;</p>
               </div>
 
-              <div className="flex flex-row flex-wrap gap-4 md:gap-6 justify-center">
-                {(() => {
-                  let cardsRendered = 0;
-                  
-                  // Separate initial spread cards from clarifying cards
-                  const initialCards = readingResult.cards.slice(0, initialCardCount);
-                  const clarifying = readingResult.cards.slice(initialCardCount);
+              <div className="flex flex-col gap-4 md:gap-6 justify-center">
+                {confirmedSpread.parts.map((part, partIndex) => {
+                  const cardsForPart = initialCards.slice(cardsRendered, cardsRendered + part.positions.length);
+                  const positionsForPart = part.positions;
+                  const partStartIndex = cardsRendered;
+                  cardsRendered += part.positions.length;
 
-                  const spreadPartsJsx = confirmedSpread.parts.map((part, partIndex) => {
-                    const cardsForPart = initialCards.slice(cardsRendered, cardsRendered + part.positions.length);
-                    const positionsForPart = part.positions;
-                    const partStartIndex = cardsRendered;
-                    cardsRendered += part.positions.length;
-
-                    return (
-                      <div key={`part-${partIndex}`} className="bg-card/20 backdrop-blur-sm rounded-lg p-4 md:p-6 w-full animate-deal-card" style={{ animationDelay: '0.2s'}}>
-                        <h3 className="font-headline text-2xl text-accent text-glow mb-4 text-center">{part.label}</h3>
-                        <div className="flex flex-row flex-wrap gap-4 md:gap-6 justify-center">
-                          {cardsForPart.map((card, indexInPart) => {
-                            const overallIndex = partStartIndex + indexInPart;
-                            return (
-                              <TarotCard
-                                key={card.id}
-                                cardName={card.name}
-                                imageUrl={card.image}
-                                isRevealed={revealedCards[overallIndex]}
-                                isReversed={card.reversed}
-                                animationDelay={`${overallIndex * 0.1 + 0.3}s`}
-                                positionLabel={positionsForPart[indexInPart]}
-                              />
-                            );
-                          })}
-                        </div>
+                  return (
+                    <div key={`part-${partIndex}`} className="bg-card/20 backdrop-blur-sm rounded-lg p-4 md:p-6 w-full animate-deal-card" style={{ animationDelay: '0.2s'}}>
+                      <h3 className="font-headline text-2xl text-accent text-glow mb-4 text-center">{part.label}</h3>
+                      <div className="flex flex-row flex-wrap gap-4 md:gap-6 justify-center">
+                        {cardsForPart.map((card, indexInPart) => {
+                          const overallIndex = partStartIndex + indexInPart;
+                          return (
+                            <TarotCard
+                              key={card.id}
+                              cardName={card.name}
+                              imageUrl={card.image}
+                              isRevealed={revealedCards[overallIndex]}
+                              isReversed={card.reversed}
+                              animationDelay={`${overallIndex * 0.1 + 0.3}s`}
+                              positionLabel={positionsForPart[indexInPart]}
+                            />
+                          );
+                        })}
                       </div>
-                    );
-                  });
-
-                  const clarifyingJsx = clarifying.length > 0 && (
-                     <div key="clarifying-cards" className="bg-card/20 backdrop-blur-sm rounded-lg p-4 md:p-6 w-full animate-deal-card" style={{ animationDelay: '0.2s'}}>
-                        <h3 className="font-headline text-2xl text-accent text-glow mb-4 text-center">Clarifying Cards</h3>
-                        <div className="flex flex-row flex-wrap gap-4 md:gap-6 justify-center">
-                            {clarifying.map((card, index) => {
-                                const overallIndex = initialCardCount + index;
-                                return (
-                                    <TarotCard
-                                        key={card.id}
-                                        cardName={card.name}
-                                        imageUrl={card.image}
-                                        isRevealed={true} // clarifying cards are always revealed
-                                        isReversed={card.reversed}
-                                        animationDelay={`${(index * 0.1) + 0.1}s`}
-                                        positionLabel="Clarification"
-                                    />
-                                );
-                            })}
-                        </div>
-                     </div>
+                    </div>
                   );
-                  
-                  return <>{spreadPartsJsx}{clarifyingJsx}</>;
-                })()}
+                })}
+
+                {clarifyingCards.length > 0 && (
+                   <div key="clarifying-cards" className="bg-card/20 backdrop-blur-sm rounded-lg p-4 md:p-6 w-full animate-deal-card" style={{ animationDelay: '0.2s'}}>
+                      <h3 className="font-headline text-2xl text-accent text-glow mb-4 text-center">Clarifying Cards</h3>
+                      <div className="flex flex-row flex-wrap gap-4 md:gap-6 justify-center">
+                          {clarifyingCards.map((card, index) => {
+                              return (
+                                  <TarotCard
+                                      key={card.id}
+                                      cardName={card.name}
+                                      imageUrl={card.image}
+                                      isRevealed={true} // clarifying cards are always revealed
+                                      isReversed={card.reversed}
+                                      animationDelay={`${(index * 0.1) + 0.1}s`}
+                                      positionLabel="Clarification"
+                                  />
+                              );
+                          })}
+                      </div>
+                   </div>
+                )}
               </div>
 
               {revealedCards.every(r => r) && readingResult.interpretation && (
