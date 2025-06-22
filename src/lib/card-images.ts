@@ -36,5 +36,12 @@ export const cardImageMap: { [key: string]: string } = cardNames.reduce((acc, ca
   // The Next.js image component will show the alt text if the image is missing.
   // As you generate the images using the tool, they will replace the alt text.
   acc[cardName] = imageUrl;
+
+  // Add an alias for cards starting with "The " to handle AI inconsistencies.
+  if (cardName.startsWith('The ')) {
+    const alias = cardName.substring(4);
+    acc[alias] = imageUrl;
+  }
+
   return acc;
 }, {} as { [key: string]: string });
