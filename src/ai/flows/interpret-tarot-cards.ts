@@ -97,6 +97,9 @@ const interpretTarotCardsFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    return output!;
+    if (!output) {
+      throw new Error("The AI failed to generate an interpretation. Its response may have been blocked for safety reasons.");
+    }
+    return output;
   }
 );

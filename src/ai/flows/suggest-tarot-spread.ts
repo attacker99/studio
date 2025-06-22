@@ -130,6 +130,9 @@ const suggestTarotSpreadFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await suggestTarotSpreadPrompt(input);
-    return output!;
+    if (!output) {
+      throw new Error("The AI failed to suggest a spread. Its response may have been blocked for safety reasons.");
+    }
+    return output;
   }
 );

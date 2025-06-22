@@ -227,7 +227,11 @@ const clarifyTarotReadingFlow = ai.defineFlow(
         clarificationHistory: input.clarificationHistory,
         availableCardsCount: availableCardsCount,
     });
-    let { drawCount } = decisionResponse.output!;
+    
+    if (!decisionResponse.output) {
+      throw new Error("The AI failed to decide how many cards to draw. Its response may have been blocked for safety reasons.");
+    }
+    let { drawCount } = decisionResponse.output;
 
     // B. Add a programmatic safety check in case the AI ignores instructions.
     if (drawCount > availableCardsCount) {
@@ -252,7 +256,10 @@ const clarifyTarotReadingFlow = ai.defineFlow(
             followUpQuestion: input.followUpQuestion,
             cardsToInterpret: drawnCards,
         });
-        clarificationText = textResponse.output!.clarification;
+        if (!textResponse.output) {
+            throw new Error("The AI failed to generate an interpretation for the new cards. Its response may have been blocked for safety reasons.");
+        }
+        clarificationText = textResponse.output.clarification;
     } else {
         // Path B: We have no new cards, so answer from existing context
         const textResponse = await answerWithoutNewCardsPrompt({
@@ -260,7 +267,10 @@ const clarifyTarotReadingFlow = ai.defineFlow(
             clarificationHistory: input.clarificationHistory,
             followUpQuestion: input.followUpQuestion,
         });
-        clarificationText = textResponse.output!.clarification;
+        if (!textResponse.output) {
+            throw new Error("The AI failed to generate a clarification. Its response may have been blocked for safety reasons.");
+        }
+        clarificationText = textResponse.output.clarification;
     }
 
     // 4. Assemble the final structured response and return it.
