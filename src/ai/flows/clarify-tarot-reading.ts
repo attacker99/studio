@@ -24,7 +24,7 @@ const ClarifyTarotReadingInputSchema = z.object({
 export type ClarifyTarotReadingInput = z.infer<typeof ClarifyTarotReadingInputSchema>;
 
 const CardDrawnSchema = z.object({
-  cardName: z.string().describe("The name of the drawn card."),
+  cardName: z.string().describe("The name of the drawn card (e.g., 'The Fool', 'Ace of Cups'). This field MUST NOT include '(Reversed)'. The `reversed` boolean field indicates orientation."),
   reversed: z.boolean().describe("Whether the card was drawn reversed.")
 });
 
@@ -93,7 +93,7 @@ Your task is to answer the follow-up question.
 2.  If you think drawing more cards would provide a better, more insightful answer, you MUST use the \`drawClarificationCards\` tool. You can draw 1, 2, or 3 cards.
 3.  If you do not think new cards are necessary, just answer the question directly.
 4.  Whether you draw cards or not, you must provide a final answer in the \`clarification\` field. If you drew cards, you MUST incorporate their meaning into your answer. Start your response with a cat-like observation like "The plot thickens!" or "The cosmic yarn has more tangles!".
-5.  Crucially, the \`cardsDrawn\` field in your output MUST contain the exact cards returned by the tool. If you don't use the tool, it MUST be an empty array. Do not hallucinate cards.
+5.  Crucially, the \`cardsDrawn\` field in your output MUST contain the exact cards returned by the tool. If you don't use the tool, it MUST be an empty array. Do not hallucinate cards. The \`cardName\` for each card must be the base name only (e.g., 'The Emperor'), not 'The Emperor (Reversed)'. The \`reversed\` boolean field handles the orientation.
 `
     });
     

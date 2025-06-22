@@ -152,22 +152,36 @@ export default function Home() {
       });
 
       if (result.cardsDrawn && result.cardsDrawn.length > 0) {
-        const newCardsWithImages: CardWithImage[] = result.cardsDrawn.map((card, index) => ({
-          name: card.cardName,
-          reversed: card.reversed,
-          image: cardImageMap[card.cardName],
-          id: `clarify-${clarificationHistory.length}-${index}-${card.cardName}`,
-          positionLabel: 'Clarification',
-        }));
-        
-        setReadingResult(prev => {
-          if (!prev) return null;
-          return { ...prev, cards: [...prev.cards, ...newCardsWithImages] };
-        });
-        
-        setRevealedCards(prev => [...prev, ...new Array(result.cardsDrawn.length).fill(true)]);
-        
-        setAllDrawnCardNames(prev => [...prev, ...result.cardsDrawn.map(c => c.cardName)]);
+        const newCardsWithImages: CardWithImage[] = result.cardsDrawn.map((card, index) => {
+          // Sanitize the card name from the AI to prevent crashes.
+          // The AI sometimes includes "(Reversed)" in the name string.
+          const cleanCardName = card.cardName.replace(/\s*\(Reversed\)\s*/i, '').trim();
+          const cardImage = cardImageMap[cleanCardName];
+
+          if (!cardImage) {
+            console.warn(`No image found for card: "${cleanCardName}" (original: "${card.cardName}")`);
+            return null;
+          }
+          
+          return {
+            name: cleanCardName, // Use the sanitized name for display
+            reversed: card.reversed,
+            image: cardImage,
+            id: `clarify-${clarificationHistory.length}-${index}-${card.cardName}`, // Use original name for a unique key
+            positionLabel: 'Clarification',
+          };
+        }).filter(Boolean) as CardWithImage[]; // Filter out any nulls from missing images
+
+        if (newCardsWithImages.length > 0) {
+          setReadingResult(prev => {
+            if (!prev) return null;
+            return { ...prev, cards: [...prev.cards, ...newCardsWithImages] };
+          });
+          
+          setRevealedCards(prev => [...prev, ...new Array(newCardsWithImages.length).fill(true)]);
+          
+          setAllDrawnCardNames(prev => [...prev, ...newCardsWithImages.map(c => c.name)]);
+        }
       }
 
       setClarificationHistory(prev => [...prev, result.clarification]);
