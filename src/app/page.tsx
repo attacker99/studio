@@ -47,21 +47,13 @@ export default function Home() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (step === 'reading' && readingResult && revealedCards.length < readingResult.cards.length) {
-      // New cards have been added, update revealed state
-      setRevealedCards(prev => [...prev, ...new Array(readingResult.cards.length - prev.length).fill(true)]);
-    }
-  }, [readingResult?.cards.length, step, readingResult, revealedCards.length]);
-
-
-  useEffect(() => {
     if (step === 'reading' && readingResult && revealedCards.some(c => !c)) {
       const revealTimer = setTimeout(() => {
         readingResult.cards.forEach((_, index) => {
           setTimeout(() => {
             setRevealedCards(prev => {
               const newRevealed = [...prev];
-              if (!newRevealed[index]) {
+              if (index < newRevealed.length && !newRevealed[index]) {
                   newRevealed[index] = true;
               }
               return newRevealed;
@@ -195,10 +187,12 @@ export default function Home() {
           id: `clarify-${clarificationHistory.length}-${index}-${card.cardName}`,
           positionLabel: card.positionLabel,
         }));
+        
         setReadingResult(prev => {
           if (!prev) return null;
           return { ...prev, cards: [...prev.cards, ...newCardsWithImages] };
         });
+        setRevealedCards(prev => [...prev, ...new Array(result.drawnCards.length).fill(true)]);
       }
 
       setClarificationHistory(prev => [...prev, result.clarification]);
@@ -393,7 +387,7 @@ export default function Home() {
               </div>
 
               {revealedCards.every(r => r) && readingResult.interpretation && (
-                 <Card className="bg-card/70 backdrop-blur-sm animate-deal-card" style={{ animationDelay: `${initialCardCount * 0.1 + 0.5}s`}}>
+                 <Card className="bg-card/70 backdrop-blur-sm animate-deal-card" style={{ animationDelay: `${initialCards.length * 0.1 + 0.5}s`}}>
                   <CardHeader>
                     <CardTitle className="font-headline text-3xl flex items-center gap-3">
                       <Sparkles className="text-accent"/>
