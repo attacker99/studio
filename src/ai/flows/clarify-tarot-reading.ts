@@ -39,7 +39,7 @@ export async function clarifyTarotReading(input: ClarifyTarotReadingInput): Prom
   return clarifyTarotReadingFlow(input);
 }
 
-// Step 1: Define a prompt for the AI to decide how many cards to draw.
+// Prompt 1: Decide how many cards to draw.
 const decideCardDrawPrompt = ai.definePrompt({
     name: 'decideCardDrawPrompt',
     input: { schema: z.object({ followUpQuestion: ClarifyTarotReadingInputSchema.shape.followUpQuestion, initialInterpretation: ClarifyTarotReadingInputSchema.shape.initialInterpretation }) },
@@ -54,9 +54,9 @@ Follow-up Question: "{{{followUpQuestion}}}"
 How many cards should be drawn to clarify?`,
 });
 
-// Step 2: Define a prompt for the AI to interpret the newly drawn cards.
-const interpretClarificationPrompt = ai.definePrompt({
-    name: 'interpretClarificationPrompt',
+// Prompt 2A: Interpret the NEWLY drawn cards.
+const interpretClarificationWithCardsPrompt = ai.definePrompt({
+    name: 'interpretClarificationWithCardsPrompt',
     input: { schema: z.object({
         question: ClarifyTarotReadingInputSchema.shape.question,
         spreadName: ClarifyTarotReadingInputSchema.shape.spreadName,
@@ -74,7 +74,6 @@ A user has a follow-up question. Based on this question, we have programmaticall
 - Initial Interpretation: "{{{initialInterpretation}}}"
 - Follow-up Question: "{{{followUpQuestion}}}"
 
-{{#if cardsToInterpret.length}}
 ---
 CARDS TO INTERPRET:
 {{#each cardsToInterpret}}
@@ -82,17 +81,34 @@ CARDS TO INTERPRET:
 {{/each}}
 ---
 Your interpretation MUST focus *exclusively* on the cards listed above. Start your response with a cat-like observation like "The plot thickens!" or "The cosmic yarn has more tangles!". Then, for each card, explain its meaning in relation to the question. Conclude with a summary. DO NOT mention any other cards.
-{{else}}
----
-NO NEW CARDS WERE DRAWN.
----
-Your task is to answer the follow-up question using ONLY the information from the initial interpretation provided above. DO NOT invent or draw new cards. DO NOT mention any new cards. Simply provide a clarifying answer based on what has already been said.
-{{/if}}
+`
+});
+
+// Prompt 2B: Answer the follow-up question WITHOUT drawing new cards.
+const answerFollowUpWithoutCardsPrompt = ai.definePrompt({
+    name: 'answerFollowUpWithoutCardsPrompt',
+    input: { schema: z.object({
+        question: ClarifyTarotReadingInputSchema.shape.question,
+        spreadName: ClarifyTarotReadingInputSchema.shape.spreadName,
+        initialInterpretation: ClarifyTarotReadingInputSchema.shape.initialInterpretation,
+        followUpQuestion: ClarifyTarotReadingInputSchema.shape.followUpQuestion,
+    })},
+    output: { schema: z.object({ clarification: ClarifyTarotReadingOutputSchema.shape.clarification }) },
+    prompt: `You are Tarot Bestie, a chronically online, gen-alpha cat who is also a legendary tarot reader. You're chaotic but your insights are always on point, no cap. Use lots of gen alpha slang (like 'rizz', 'bet', 'no cap', 'slay', 'bussin'), cat puns, and a generally degen, slightly unhinged tone.
+
+A user has a follow-up question about their tarot reading. You have decided NOT to draw any new cards.
+Your task is to answer their follow-up question using ONLY the information from the initial reading provided below.
+DO NOT invent new information. DO NOT suggest drawing cards. DO NOT mention any cards that were not in the initial interpretation. Simply provide a clarifying answer based on what has already been said.
+
+- Original Question: "{{{question}}}"
+- Spread: "{{{spreadName}}}"
+- Initial Interpretation: "{{{initialInterpretation}}}"
+- Follow-up Question: "{{{followUpQuestion}}}"
 `
 });
 
 
-// Step 3: Define the main flow that orchestrates the steps.
+// Main flow that orchestrates the steps.
 const clarifyTarotReadingFlow = ai.defineFlow(
   {
     name: 'clarifyTarotReadingFlow',
@@ -116,15 +132,24 @@ const clarifyTarotReadingFlow = ai.defineFlow(
         drawnCards = actuallyDrawn.map(c => ({ cardName: c.name, reversed: c.reversed }));
     }
 
-    // 3. Interpret the result (with or without new cards).
-    const interpretationResponse = await interpretClarificationPrompt({
-        ...input,
-        cardsToInterpret: drawnCards,
-    });
-    const { clarification } = interpretationResponse.output!;
+    // 3. Interpret the result by calling the appropriate prompt.
+    let clarification = '';
+    if (drawnCards.length > 0) {
+      const interpretationResponse = await interpretClarificationWithCardsPrompt({
+          ...input,
+          cardsToInterpret: drawnCards,
+      });
+      clarification = interpretationResponse.output!.clarification;
+    } else {
+      const interpretationResponse = await answerFollowUpWithoutCardsPrompt({
+          ...input,
+      });
+      clarification = interpretationResponse.output!.clarification;
+    }
 
     // 4. Assemble and return the final, structured response.
-    // The `cardsDrawn` array is now guaranteed to be correct because it was generated by our code, not the LLM.
+    // `cardsDrawn` is guaranteed to be correct because it was generated by our code.
+    // The `clarification` text is now guaranteed to be consistent with the cards drawn.
     return {
         clarification,
         cardsDrawn: drawnCards,
