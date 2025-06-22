@@ -317,9 +317,12 @@ export default function Home() {
           )
         );
 
-      case 'reading':
+      case 'reading': {
+        if (!readingResult || !confirmedSpread) return null;
+
+        const initialCardCount = confirmedSpread.parts.reduce((sum, part) => sum + part.positions.length, 0);
+
         return (
-          readingResult && confirmedSpread && (
             <div className="w-full max-w-6xl space-y-8">
               <div className="text-center animate-deal-card" style={{ animationDelay: '0s'}}>
                 <h2 className="font-headline text-3xl md:text-4xl">The Tea Has Been Spilled</h2>
@@ -329,10 +332,8 @@ export default function Home() {
               <div className="flex flex-row flex-wrap gap-4 md:gap-6 justify-center">
                 {(() => {
                   let cardsRendered = 0;
-                  const clarifyingCards: CardWithImage[] = [];
-
+                  
                   // Separate initial spread cards from clarifying cards
-                  const initialCardCount = confirmedSpread.parts.reduce((sum, part) => sum + part.positions.length, 0);
                   const initialCards = readingResult.cards.slice(0, initialCardCount);
                   const clarifying = readingResult.cards.slice(initialCardCount);
 
@@ -464,8 +465,8 @@ export default function Home() {
                 </Button>
               </div>
             </div>
-          )
         );
+      }
       default:
         return null;
     }
