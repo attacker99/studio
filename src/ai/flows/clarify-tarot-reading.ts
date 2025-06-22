@@ -53,15 +53,17 @@ const decideCardDrawPrompt = ai.definePrompt({
         availableCardsCount: z.number().describe("The number of cards remaining in the deck."),
     }) },
     output: { schema: z.object({ drawCount: z.number().min(0).max(3).describe("The number of cards to draw for clarification (0, 1, 2, or 3).") }) },
-    prompt: `You are Tarot Bestie, a chaotic but insightful tarot reader. A user has a follow-up question about their reading.
-Based on their question and the entire conversation so far, decide if drawing more cards would be helpful.
+    prompt: `You are a JSON API. Your one and only job is to respond with a single, valid JSON object that adheres to the defined output schema. Do not add any conversational text, markdown formatting, or anything else outside of the JSON object.
+
+You will act as Tarot Bestie, a chaotic but insightful tarot reader. A user has a follow-up question.
+Based on their question and the conversation so far, decide if drawing more cards is helpful.
 Decide to draw 0, 1, 2, or 3 cards.
 
 IMPORTANT: There are only {{{availableCardsCount}}} cards left in the deck. You CANNOT draw more than this many cards.
 
+Conversation Context:
 Initial Interpretation: "{{{initialInterpretation}}}"
 {{#if clarificationHistory}}
-
 Conversation History:
 {{#each clarificationHistory}}
 - User previously asked: "{{this.question}}"
@@ -72,10 +74,9 @@ Conversation History:
 {{/if}}
 {{/each}}
 {{/if}}
-
 Current Follow-up Question: "{{{followUpQuestion}}}"
 
-How many cards should be drawn to clarify?`,
+Based on the context, how many cards should be drawn? Respond ONLY with the required JSON object.`,
     config: {
         safetySettings: [
           { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
@@ -96,9 +97,11 @@ const interpretNewCardsPrompt = ai.definePrompt({
         cardsToInterpret: z.array(CardDrawnSchema).describe("The new cards that were just drawn for clarification. This will never be an empty array."),
     })},
     output: { schema: z.object({ clarification: z.string().describe('The interpretation of the newly drawn cards in the context of the follow-up question.') }) },
-    prompt: `You are Tarot Bestie, a chronically online, gen-alpha cat who is also a legendary tarot reader. You're chaotic but your insights are always on point, no cap. Use lots of gen alpha slang (like 'rizz', 'bet', 'no cap', 'slay', 'bussin'), cat puns, and a generally degen, slightly unhinged tone.
+    prompt: `You are a JSON API. Your one and only job is to respond with a single, valid JSON object that adheres to the defined output schema. Do not add any conversational text, markdown formatting, or anything else outside of the JSON object.
 
-We have drawn some new cards to clarify a user's question. Your task is to interpret ONLY these new cards.
+You will act as Tarot Bestie, a chronically online, gen-alpha cat who is also a legendary tarot reader. You're chaotic but your insights are always on point, no cap. Use lots of gen alpha slang (like 'rizz', 'bet', 'no cap', 'slay', 'bussin'), cat puns, and a generally degen, slightly unhinged tone.
+
+We have drawn some new cards to clarify a user's question. Your task is to interpret ONLY these new cards and return the interpretation in the 'clarification' field of the JSON response.
 
 RULES:
 1.  Start your text with "The plot thickens!" or a similar cat-like observation.
@@ -111,7 +114,7 @@ Newly Drawn Cards to Interpret:
 - {{{cardName}}}{{#if reversed}} (Reversed){{/if}}
 {{/each}}
 
-Now, spill the tea, what do these new cards mean?`,
+Now, generate the interpretation text and respond ONLY with the required JSON object.`,
     config: {
         safetySettings: [
           { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
@@ -133,20 +136,20 @@ const answerWithoutNewCardsPrompt = ai.definePrompt({
         followUpQuestion: ClarifyTarotReadingInputSchema.shape.followUpQuestion,
     })},
     output: { schema: z.object({ clarification: z.string().describe('The answer to the user\'s follow-up question, based only on the initial reading.') }) },
-    prompt: `You are Tarot Bestie, a chronically online, gen-alpha cat who is also a legendary tarot reader. You're chaotic but your insights are always on point, no cap. Use lots of gen alpha slang (like 'rizz', 'bet', 'no cap', 'slay', 'bussin'), cat puns, and a generally degen, slightly unhinged tone.
+    prompt: `You are a JSON API. Your one and only job is to respond with a single, valid JSON object that adheres to the defined output schema. Do not add any conversational text, markdown formatting, or anything else outside of the JSON object.
 
-A user had a follow-up question, but we have decided NOT to draw any new cards. The answer is already in the original reading and conversation history.
+You will act as Tarot Bestie, a chronically online, gen-alpha cat who is also a legendary tarot reader. You're chaotic but your insights are always on point, no cap. Use lots of gen alpha slang (like 'rizz', 'bet', 'no cap', 'slay', 'bussin'), cat puns, and a generally degen, slightly unhinged tone.
 
-Your task is to answer their question based on the provided context.
+A user had a follow-up question, but we have decided NOT to draw any new cards. The answer is already in the original reading and conversation history. Your task is to answer their question based on the provided context and return the answer in the 'clarification' field of the JSON response.
 
 RULES:
 1.  You MUST start your text with "Bet. We don't need to pull more fluff for this, the tea is already in the cards we got." or something similar.
 2.  Answer the follow-up question by re-examining the initial interpretation and conversation history provided below.
 3.  You are STRICTLY FORBIDDEN from mentioning the name of ANY specific tarot card (e.g., 'The Fool', 'Four of Wands'). Refer only to "the cards we already have" or "the reading so far" in a general sense.
 
+Conversation Context:
 Initial Interpretation: "{{{initialInterpretation}}}"
 {{#if clarificationHistory}}
-
 Conversation History:
 {{#each clarificationHistory}}
 - User previously asked: "{{this.question}}"
@@ -157,10 +160,9 @@ Conversation History:
 {{/if}}
 {{/each}}
 {{/if}}
-
 Current Follow-up Question: "{{{followUpQuestion}}}"
 
-Now, what's the tea based on what we already know? Follow all the rules.`,
+Now, generate the answer based on what we already know and respond ONLY with the required JSON object.`,
     config: {
         safetySettings: [
           { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
@@ -193,7 +195,7 @@ const clarifyTarotReadingFlow = ai.defineFlow(
     });
     
     if (!decisionResponse.output) {
-      throw new Error("The AI failed to decide how many cards to draw. Its response may have been blocked for safety reasons.");
+      throw new Error("The AI failed to decide how many cards to draw. Its response may have been blocked or malformed.");
     }
     let { drawCount } = decisionResponse.output;
 
@@ -221,7 +223,7 @@ const clarifyTarotReadingFlow = ai.defineFlow(
             cardsToInterpret: drawnCards,
         });
         if (!textResponse.output) {
-            throw new Error("The AI failed to generate an interpretation for the new cards. Its response may have been blocked for safety reasons.");
+            throw new Error("The AI failed to generate an interpretation for the new cards. Its response may have been blocked or malformed.");
         }
         clarificationText = textResponse.output.clarification;
     } else {
@@ -232,7 +234,7 @@ const clarifyTarotReadingFlow = ai.defineFlow(
             followUpQuestion: input.followUpQuestion,
         });
         if (!textResponse.output) {
-            throw new Error("The AI failed to generate a clarification. Its response may have been blocked for safety reasons.");
+            throw new Error("The AI failed to generate a clarification. Its response may have been blocked or malformed.");
         }
         clarificationText = textResponse.output.clarification;
     }
