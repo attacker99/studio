@@ -117,10 +117,15 @@ const suggestTarotSpreadFlow = ai.defineFlow(
     outputSchema: SuggestTarotSpreadOutputSchema,
   },
   async input => {
-    const {output} = await suggestTarotSpreadPrompt(input);
-    if (!output) {
-      throw new Error("The AI failed to suggest a spread. Its response may have been blocked for safety reasons.");
+    try {
+        const {output} = await suggestTarotSpreadPrompt(input);
+        if (!output) {
+          throw new Error("The AI failed to suggest a spread. Its response may have been blocked for safety reasons or was empty.");
+        }
+        return output;
+    } catch (error) {
+        console.error("Error in suggestTarotSpreadFlow calling Gemini:", error);
+        throw new Error(`Failed to suggest spread: ${error instanceof Error ? error.message : String(error)}`);
     }
-    return output;
   }
 );

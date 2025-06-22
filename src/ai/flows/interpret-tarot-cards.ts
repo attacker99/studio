@@ -84,10 +84,15 @@ const interpretTarotCardsFlow = ai.defineFlow(
     outputSchema: InterpretTarotCardsOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    if (!output) {
-      throw new Error("The AI failed to generate an interpretation. Its response may have been blocked for safety reasons.");
+    try {
+      const {output} = await prompt(input);
+      if (!output) {
+        throw new Error("The AI failed to generate an interpretation. Its response may have been blocked for safety reasons or was empty.");
+      }
+      return output;
+    } catch (error) {
+      console.error("Error in interpretTarotCardsFlow calling Gemini:", error);
+      throw new Error(`Failed to generate interpretation: ${error instanceof Error ? error.message : String(error)}`);
     }
-    return output;
   }
 );
