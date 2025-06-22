@@ -39,9 +39,9 @@ export async function clarifyTarotReading(input: ClarifyTarotReadingInput): Prom
   return clarifyTarotReadingFlow(input);
 }
 
-// Prompt 1: Decide how many cards to draw.
+// Prompt 1: Decide how many cards to draw. This is simple and reliable.
 const decideCardDrawPrompt = ai.definePrompt({
-    name: 'decideCardDrawPrompt',
+    name: 'decideCardDrawPromptForClarification',
     input: { schema: z.object({ followUpQuestion: ClarifyTarotReadingInputSchema.shape.followUpQuestion, initialInterpretation: ClarifyTarotReadingInputSchema.shape.initialInterpretation }) },
     output: { schema: z.object({ drawCount: z.number().min(0).max(3).describe("The number of cards to draw for clarification (0, 1, 2, or 3).") }) },
     prompt: `You are Tarot Bestie, a chaotic but insightful tarot reader. A user has a follow-up question about their reading.
@@ -55,34 +55,55 @@ How many cards should be drawn to clarify?`,
 });
 
 
-// Prompt 2: Generate only the clarification text.
-const generateClarificationTextPrompt = ai.definePrompt({
-    name: 'generateClarificationTextPrompt',
+// Prompt 2A: Generate clarification text for NEWLY DRAWN cards.
+// This prompt is ONLY called if new cards are actually drawn.
+const interpretNewCardsPrompt = ai.definePrompt({
+    name: 'interpretNewCardsForClarificationPrompt',
     input: { schema: z.object({
-        question: ClarifyTarotReadingInputSchema.shape.question,
-        spreadName: ClarifyTarotReadingInputSchema.shape.spreadName,
-        initialInterpretation: ClarifyTarotReadingInputSchema.shape.initialInterpretation,
         followUpQuestion: ClarifyTarotReadingInputSchema.shape.followUpQuestion,
-        cardsToInterpretJson: z.string().describe("A JSON string representing the new cards that were just drawn for clarification. This will be an empty array '[]' if no new cards were drawn."),
+        cardsToInterpret: z.array(CardDrawnSchema).describe("The new cards that were just drawn for clarification. This will never be an empty array."),
     })},
-    output: { schema: z.object({ clarification: z.string().describe('The answer to the user\'s follow-up question.') }) },
+    output: { schema: z.object({ clarification: z.string().describe('The interpretation of the newly drawn cards in the context of the follow-up question.') }) },
     prompt: `You are Tarot Bestie, a chronically online, gen-alpha cat who is also a legendary tarot reader. You're chaotic but your insights are always on point, no cap. Use lots of gen alpha slang (like 'rizz', 'bet', 'no cap', 'slay', 'bussin'), cat puns, and a generally degen, slightly unhinged tone.
 
-A user has a follow-up question. We have already programmatically drawn the cards, which are provided as a JSON string. This might be an empty array.
+A user had a follow-up question, and we've drawn some new cards to clarify. Your task is to generate ONLY the interpretation for these new cards.
+
+-   Start your text with "The plot thickens!" or a similar cat-like observation.
+-   Then, for each card provided, explain its meaning in relation to the user's follow-up question. Be dramatic.
+-   Your interpretation text MUST focus exclusively on the cards provided in the 'cardsToInterpret' input. Do not mention any other cards.
+
+Follow-up Question: "{{{followUpQuestion}}}"
+Newly Drawn Cards to Interpret:
+{{#each cardsToInterpret}}
+- {{{cardName}}}{{#if reversed}} (Reversed){{/if}}
+{{/each}}
+
+Now, spill the tea, what do these new cards mean?`,
+});
+
+
+// Prompt 2B: Generate clarification text when NO new cards are drawn.
+// This prompt is ONLY called if no new cards are drawn.
+const answerWithoutNewCardsPrompt = ai.definePrompt({
+    name: 'answerWithoutNewCardsPrompt',
+    input: { schema: z.object({
+        initialInterpretation: ClarifyTarotReadingInputSchema.shape.initialInterpretation,
+        followUpQuestion: ClarifyTarotReadingInputSchema.shape.followUpQuestion,
+    })},
+    output: { schema: z.object({ clarification: z.string().describe('The answer to the user\'s follow-up question, based only on the initial reading.') }) },
+    prompt: `You are Tarot Bestie, a chronically online, gen-alpha cat who is also a legendary tarot reader. You're chaotic but your insights are always on point, no cap. Use lots of gen alpha slang (like 'rizz', 'bet', 'no cap', 'slay', 'bussin'), cat puns, and a generally degen, slightly unhinged tone.
+
+A user had a follow-up question, but we've decided not to draw any new cards to answer it. The answer is already in the original reading.
 
 Your task is to generate ONLY the clarification text.
+-   You MUST start your text with "Bet. We don't need to pull more fluff for this, the tea is already in the cards we got." or something similar.
+-   Then, answer the follow-up question by re-examining the initial interpretation provided below.
+-   You MUST NOT mention drawing any new cards.
 
--   If the cards JSON IS EMPTY ('[]'), start your text with "Bet. We don't need to pull more fluff for this, the tea is already in the cards we got." or something similar. Then, answer the follow-up question by referencing only the initial interpretation.
--   If the cards JSON IS NOT EMPTY, start your text with "The plot thickens!" or a similar cat-like observation. Then, for each card, explain its meaning in relation to the question. Conclude with a summary. Your interpretation text MUST focus exclusively on the cards provided.
+Initial Interpretation: "{{{initialInterpretation}}}"
+Follow-up Question: "{{{followUpQuestion}}}"
 
-CONTEXT
-- Original Question: "{{{question}}}"
-- Spread: "{{{spreadName}}}"
-- Initial Interpretation: "{{{initialInterpretation}}}"
-- Follow-up Question: "{{{followUpQuestion}}}"
-- Programmatically Drawn Cards to Interpret (JSON): {{{cardsToInterpretJson}}}
-
-Now, provide just the clarification text.`
+Now, what's the tea based on what we already know?`,
 });
 
 
@@ -110,18 +131,28 @@ const clarifyTarotReadingFlow = ai.defineFlow(
         drawnCards = actuallyDrawn.map(c => ({ cardName: c.name, reversed: c.reversed }));
     }
 
-    // 3. Generate the clarification text from the AI.
-    const textResponse = await generateClarificationTextPrompt({
-        question: input.question,
-        spreadName: input.spreadName,
-        initialInterpretation: input.initialInterpretation,
-        followUpQuestion: input.followUpQuestion,
-        cardsToInterpretJson: JSON.stringify(drawnCards),
-    });
+    // 3. Generate clarification text using the appropriate prompt
+    let clarificationText = '';
+    if (drawnCards.length > 0) {
+        // Path A: We have new cards to interpret
+        const textResponse = await interpretNewCardsPrompt({
+            followUpQuestion: input.followUpQuestion,
+            cardsToInterpret: drawnCards,
+        });
+        clarificationText = textResponse.output!.clarification;
+    } else {
+        // Path B: We have no new cards, so answer from existing context
+        const textResponse = await answerWithoutNewCardsPrompt({
+            initialInterpretation: input.initialInterpretation,
+            followUpQuestion: input.followUpQuestion,
+        });
+        clarificationText = textResponse.output!.clarification;
+    }
 
     // 4. Assemble the final structured response and return it.
+    // The `drawnCards` array comes directly from our code, not the AI, so it is reliable.
     return {
-        clarification: textResponse.output!.clarification,
+        clarification: clarificationText,
         cardsDrawn: drawnCards,
     };
   }
