@@ -49,12 +49,15 @@ const decideCardDrawPrompt = ai.definePrompt({
     input: { schema: z.object({
         initialInterpretation: ClarifyTarotReadingInputSchema.shape.initialInterpretation,
         clarificationHistory: ClarifyTarotReadingInputSchema.shape.clarificationHistory,
-        followUpQuestion: ClarifyTarotReadingInputSchema.shape.followUpQuestion
+        followUpQuestion: ClarifyTarotReadingInputSchema.shape.followUpQuestion,
+        availableCardsCount: z.number().describe("The number of cards remaining in the deck."),
     }) },
     output: { schema: z.object({ drawCount: z.number().min(0).max(3).describe("The number of cards to draw for clarification (0, 1, 2, or 3).") }) },
     prompt: `You are Tarot Bestie, a chaotic but insightful tarot reader. A user has a follow-up question about their reading.
 Based on their question and the entire conversation so far, decide if drawing more cards would be helpful.
 Decide to draw 0, 1, 2, or 3 cards.
+
+IMPORTANT: There are only {{{availableCardsCount}}} cards left in the deck. You CANNOT draw more than this many cards.
 
 Initial Interpretation: "{{{initialInterpretation}}}"
 {{#if clarificationHistory}}
@@ -205,18 +208,29 @@ const clarifyTarotReadingFlow = ai.defineFlow(
     outputSchema: ClarifyTarotReadingOutputSchema,
   },
   async (input) => {
-    // 1. Decide how many cards to draw
+    // A. Calculate how many cards are available to be drawn.
+    const availableCards = TAROT_DECK.filter(c => !input.allDrawnCardNames.includes(c));
+    const availableCardsCount = availableCards.length;
+    
+    // 1. Decide how many cards to draw, telling the AI how many are left.
     const decisionResponse = await decideCardDrawPrompt({
         followUpQuestion: input.followUpQuestion,
         initialInterpretation: input.initialInterpretation,
         clarificationHistory: input.clarificationHistory,
+        availableCardsCount: availableCardsCount,
     });
-    const { drawCount } = decisionResponse.output!;
+    let { drawCount } = decisionResponse.output!;
+
+    // B. Add a programmatic safety check in case the AI ignores instructions.
+    if (drawCount > availableCardsCount) {
+        console.warn(`AI wanted to draw ${drawCount} cards, but only ${availableCardsCount} are available. Capping at ${availableCardsCount}.`);
+        drawCount = availableCardsCount;
+    }
 
     let drawnCards: CardDrawn[] = [];
     if (drawCount > 0) {
         // 2. If we need to draw, then draw the cards programmatically.
-        const availableCards = TAROT_DECK.filter(c => !input.allDrawnCardNames.includes(c));
+        // We can just use the pre-filtered 'availableCards' list.
         console.log(`AI decided to draw ${drawCount} cards. Drawing from ${availableCards.length} available cards.`);
         const actuallyDrawn = await drawCards(drawCount, availableCards);
         drawnCards = actuallyDrawn.map(c => ({ cardName: c.name, reversed: c.reversed }));
