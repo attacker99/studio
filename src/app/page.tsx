@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { suggestTarotSpread, type SuggestTarotSpreadOutput, type SingleSpreadSuggestion } from '@/ai/flows/suggest-tarot-spread';
 import { interpretTarotCards, type InterpretTarotCardsInput } from '@/ai/flows/interpret-tarot-cards';
-import { clarifyTarotReading } from '@/ai/flows/clarify-tarot-reading';
+import { clarifyTarotReading, type ClarifyTarotReadingInput } from '@/ai/flows/clarify-tarot-reading';
 import { drawCards } from '@/lib/tarot';
 import { cardImageMap } from '@/lib/card-images';
 import { Loader } from '@/components/ui/loader';
@@ -20,7 +20,13 @@ import { Label } from '@/components/ui/label';
 import ReactMarkdown from 'react-markdown';
 
 type Step = 'question' | 'suggestion' | 'reading';
-type CardWithImage = { name: string; image: string; reversed: boolean; id: string; };
+type CardWithImage = {
+  name: string;
+  image: string;
+  reversed: boolean;
+  id: string;
+  positionLabel?: string;
+};
 
 export default function Home() {
   const [step, setStep] = useState<Step>('question');
@@ -158,7 +164,7 @@ export default function Home() {
     }
     setIsClarifying(true);
 
-    const spreadPartsForClarification: Omit<Parameters<typeof clarifyTarotReading>[0], 'newlyDrawnCard'>['spreadParts'] = [];
+    const spreadPartsForClarification: ClarifyTarotReadingInput['spreadParts'] = [];
     let cardIndex = 0;
     for (const part of confirmedSpread.parts) {
       const cardsWithPositions = part.positions.map((positionLabel, indexInPart) => {
@@ -181,16 +187,17 @@ export default function Home() {
         followUpQuestion,
       });
 
-      if (result.drawnCard) {
-        const newCardWithImage: CardWithImage = {
-          name: result.drawnCard.cardName,
-          reversed: result.drawnCard.reversed,
-          image: cardImageMap[result.drawnCard.cardName],
-          id: `clarify-${clarificationHistory.length}-${result.drawnCard.cardName}`,
-        };
+      if (result.drawnCards && result.drawnCards.length > 0) {
+        const newCardsWithImages: CardWithImage[] = result.drawnCards.map((card, index) => ({
+          name: card.cardName,
+          reversed: card.reversed,
+          image: cardImageMap[card.cardName],
+          id: `clarify-${clarificationHistory.length}-${index}-${card.cardName}`,
+          positionLabel: card.positionLabel,
+        }));
         setReadingResult(prev => {
           if (!prev) return null;
-          return { ...prev, cards: [...prev.cards, newCardWithImage] };
+          return { ...prev, cards: [...prev.cards, ...newCardsWithImages] };
         });
       }
 
@@ -367,15 +374,16 @@ export default function Home() {
                       <h3 className="font-headline text-2xl text-accent text-glow mb-4 text-center">Clarifying Cards</h3>
                       <div className="flex flex-row flex-wrap gap-4 md:gap-6 justify-center">
                           {clarifyingCards.map((card, index) => {
+                              const overallIndex = initialCardCount + index;
                               return (
                                   <TarotCard
                                       key={card.id}
                                       cardName={card.name}
                                       imageUrl={card.image}
-                                      isRevealed={true} // clarifying cards are always revealed
+                                      isRevealed={revealedCards[overallIndex]}
                                       isReversed={card.reversed}
                                       animationDelay={`${(index * 0.1) + 0.1}s`}
-                                      positionLabel="Clarification"
+                                      positionLabel={card.positionLabel || "Clarification"}
                                   />
                               );
                           })}
@@ -417,16 +425,16 @@ export default function Home() {
                 </div>
               )}
 
-              {revealedCards.slice(0, confirmedSpread.parts.reduce((sum, part) => sum + part.positions.length, 0)).every(r => r) && readingResult.interpretation && (
+              {revealedCards.slice(0, initialCardCount).every(r => r) && readingResult.interpretation && (
                 <Card className="bg-card/70 backdrop-blur-sm animate-deal-card" style={{ animationDelay: `${readingResult.cards.length * 0.1 + 0.7}s`}}>
                   <CardHeader>
                     <CardTitle className="font-headline text-xl">Go Deeper</CardTitle>
-                    <CardDescription>Ask the void kitty a follow-up question, or ask it to draw a clarifying card.</CardDescription>
+                    <CardDescription>Ask the void kitty a follow-up question. It might even draw more cards if the vibe is right.</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="grid w-full gap-4">
                       <Textarea
-                        placeholder="e.g., 'tell me more about the tower card' or 'draw one more card for the outcome'"
+                        placeholder="e.g., 'tell me more about the tower card' or 'what should I watch out for?'"
                         value={followUpQuestion}
                         onChange={(e) => setFollowUpQuestion(e.target.value)}
                         rows={3}
@@ -449,7 +457,6 @@ export default function Home() {
                   </CardContent>
                 </Card>
               )}
-
 
               <div className="text-center">
                 <Button onClick={handleReset} size="lg" variant="outline">
