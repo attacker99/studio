@@ -153,21 +153,16 @@ export default function Home() {
 
       if (result.cardsDrawn && result.cardsDrawn.length > 0) {
         const newCardsWithImages: CardWithImage[] = result.cardsDrawn.map((card, index) => {
-          // The AI can be inconsistent. We need to reliably determine the reversed status
-          // and get a clean name for looking up the image file.
-          const isReversed = card.reversed || /\(reversed\)/i.test(card.cardName);
-          const cleanCardName = card.cardName.replace(/\s*\(reversed\)\s*/i, '').trim();
-
-          const cardImage = cardImageMap[cleanCardName];
+          const cardImage = cardImageMap[card.cardName];
 
           if (!cardImage) {
-            console.warn(`No image found for card: "${cleanCardName}" (original: "${card.cardName}")`);
+            console.warn(`No image found for card: "${card.cardName}"`);
             return null;
           }
           
           return {
-            name: cleanCardName, // Use the clean name for display
-            reversed: isReversed, // Use our reliable boolean to flip the card
+            name: card.cardName,
+            reversed: card.reversed,
             image: cardImage,
             id: `clarify-${clarificationHistory.length}-${index}-${card.cardName}`,
             positionLabel: 'Clarification',
