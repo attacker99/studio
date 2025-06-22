@@ -8,8 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { suggestTarotSpread, type SuggestTarotSpreadOutput, type SingleSpreadSuggestion } from '@/ai/flows/suggest-tarot-spread';
 import { interpretTarotCards, type InterpretTarotCardsInput } from '@/ai/flows/interpret-tarot-cards';
-import { clarifyTarotReading, type ClarifyTarotReadingInput } from '@/ai/flows/clarify-tarot-reading';
-import { drawCards } from '@/lib/tarot';
+import { clarifyTarotReading, type ClarifyTarotReadingOutput } from '@/ai/flows/clarify-tarot-reading';
+import { drawCards, TAROT_DECK } from '@/lib/tarot';
 import { cardImageMap } from '@/lib/card-images';
 import { Loader } from '@/components/ui/loader';
 import { TarotCard } from '@/components/tarot-card';
@@ -28,6 +28,28 @@ type CardWithImage = {
   positionLabel?: string;
 };
 
+function parseCardsFromText(text: string, existingCards: string[]): { name: string; reversed: boolean; positionLabel: string }[] {
+  const foundCards: { name: string; reversed: boolean; positionLabel: string }[] = [];
+  const remainingDeck = TAROT_DECK.filter(c => !existingCards.includes(c));
+
+  for (const cardName of remainingDeck) {
+    const reversedPattern = new RegExp(`Reversed ${cardName}`, 'i');
+    const uprightPattern = new RegExp(`(?<!Reversed\\s)${cardName}`, 'i');
+
+    if (reversedPattern.test(text)) {
+      if (!foundCards.some(c => c.name === cardName)) {
+        foundCards.push({ name: cardName, reversed: true, positionLabel: 'Clarification' });
+      }
+    } else if (uprightPattern.test(text)) {
+       if (!foundCards.some(c => c.name === cardName)) {
+        foundCards.push({ name: cardName, reversed: false, positionLabel: 'Clarification' });
+      }
+    }
+  }
+  return foundCards;
+}
+
+
 export default function Home() {
   const [step, setStep] = useState<Step>('question');
   const [question, setQuestion] = useState('');
@@ -43,6 +65,8 @@ export default function Home() {
   const [followUpQuestion, setFollowUpQuestion] = useState('');
   const [clarificationHistory, setClarificationHistory] = useState<string[]>([]);
   const [isClarifying, setIsClarifying] = useState(false);
+  const [allDrawnCardNames, setAllDrawnCardNames] = useState<string[]>([]);
+
 
   const { toast } = useToast();
 
@@ -112,6 +136,9 @@ export default function Home() {
           spreadParts: spreadPartsForInterpretation,
         });
         
+        const drawnCardNames = drawnCardsResult.map(c => c.name);
+        setAllDrawnCardNames(drawnCardNames);
+
         const cardsWithImages: CardWithImage[] = drawnCardsResult.map((card, index) => ({
           name: card.name,
           reversed: card.reversed,
@@ -137,35 +164,23 @@ export default function Home() {
     }
     setIsClarifying(true);
 
-    const spreadPartsForClarification: ClarifyTarotReadingInput['spreadParts'] = [];
-    let cardIndex = 0;
-    for (const part of confirmedSpread.parts) {
-      const cardsWithPositions = part.positions.map((positionLabel, indexInPart) => {
-        const card = readingResult.cards[cardIndex + indexInPart];
-        return { cardName: card.name, positionLabel, reversed: card.reversed };
-      });
-      spreadPartsForClarification.push({
-        label: part.label,
-        cards: cardsWithPositions,
-      });
-      cardIndex += part.positions.length;
-    }
-
     try {
-      const result = await clarifyTarotReading({
+      const result: ClarifyTarotReadingOutput = await clarifyTarotReading({
         question,
         spreadName: confirmedSpread.suggestedSpread,
-        spreadParts: spreadPartsForClarification,
         initialInterpretation: readingResult.interpretation,
         followUpQuestion,
+        allDrawnCardNames: allDrawnCardNames,
       });
 
-      if (result.drawnCards && result.drawnCards.length > 0) {
-        const newCardsWithImages: CardWithImage[] = result.drawnCards.map((card, index) => ({
-          name: card.cardName,
+      const newCardsFound = parseCardsFromText(result.clarification, allDrawnCardNames);
+      
+      if (newCardsFound.length > 0) {
+        const newCardsWithImages: CardWithImage[] = newCardsFound.map((card, index) => ({
+          name: card.name,
           reversed: card.reversed,
-          image: cardImageMap[card.cardName],
-          id: `clarify-${clarificationHistory.length}-${index}-${card.cardName}`,
+          image: cardImageMap[card.name],
+          id: `clarify-${clarificationHistory.length}-${index}-${card.name}`,
           positionLabel: card.positionLabel,
         }));
         
@@ -173,7 +188,10 @@ export default function Home() {
           if (!prev) return null;
           return { ...prev, cards: [...prev.cards, ...newCardsWithImages] };
         });
-        setRevealedCards(prev => [...prev, ...new Array(result.drawnCards!.length).fill(true)]);
+        
+        setRevealedCards(prev => [...prev, ...new Array(newCardsFound.length).fill(true)]);
+        
+        setAllDrawnCardNames(prev => [...prev, ...newCardsFound.map(c => c.name)]);
       }
 
       setClarificationHistory(prev => [...prev, result.clarification]);
@@ -199,6 +217,7 @@ export default function Home() {
     setRevealedCards([]);
     setFollowUpQuestion('');
     setClarificationHistory([]);
+    setAllDrawnCardNames([]);
   };
 
   const renderContent = () => {
