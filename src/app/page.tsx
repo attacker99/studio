@@ -144,9 +144,12 @@ export default function Home() {
     }
     setIsClarifying(true);
 
-    const clarificationHistory = clarificationRounds.map(round => ({
+    const clarificationHistoryForAI = clarificationRounds.map(round => ({
       question: round.question,
-      answer: round.text,
+      cardsDrawn: round.cards.map(card => ({
+        cardName: card.name,
+        reversed: card.reversed,
+      }))
     }));
 
     try {
@@ -154,13 +157,12 @@ export default function Home() {
         question,
         spreadName: confirmedSpread.suggestedSpread,
         initialInterpretation: readingResult.interpretation,
-        clarificationHistory,
+        clarificationHistory: clarificationHistoryForAI,
         followUpQuestion,
         allDrawnCardNames,
       });
 
       // Update the master list of all drawn cards for the *next* follow-up.
-      // This is the key to maintaining the deck state correctly.
       if (result.cardsDrawn.length > 0) {
         const newlyDrawnNames = result.cardsDrawn.map(c => c.cardName);
         setAllDrawnCardNames(prev => [...prev, ...newlyDrawnNames]);

@@ -14,24 +14,24 @@ import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 import { TAROT_DECK, drawCards } from '@/lib/tarot';
 
-const ClarifyTarotReadingInputSchema = z.object({
-  question: z.string().describe('The user-provided question for the tarot reading.'),
-  spreadName: z.string().describe('The name of the chosen tarot spread.'),
-  initialInterpretation: z.string().describe("The full initial interpretation that was given to the user, which includes the initially drawn cards."),
-  clarificationHistory: z.array(z.object({
-      question: z.string(),
-      answer: z.string(),
-  })).describe("A history of previous follow-up questions and their answers in this session.").optional(),
-  followUpQuestion: z.string().describe("The user's new, current follow-up question about the reading."),
-  allDrawnCardNames: z.array(z.string()).describe("A list of all card names that have been drawn in this session so far."),
-});
-export type ClarifyTarotReadingInput = z.infer<typeof ClarifyTarotReadingInputSchema>;
-
 const CardDrawnSchema = z.object({
   cardName: z.string().describe("The name of the drawn card (e.g., 'The Fool', 'Ace of Cups')."),
   reversed: z.boolean().describe("Whether the card was drawn reversed.")
 });
 export type CardDrawn = z.infer<typeof CardDrawnSchema>;
+
+const ClarifyTarotReadingInputSchema = z.object({
+  question: z.string().describe('The user-provided question for the tarot reading.'),
+  spreadName: z.string().describe('The name of the chosen tarot spread.'),
+  initialInterpretation: z.string().describe("The full initial interpretation that was given to the user, which includes the initially drawn cards."),
+  clarificationHistory: z.array(z.object({
+      question: z.string().describe("A previous follow-up question from the user."),
+      cardsDrawn: z.array(CardDrawnSchema).describe("The cards that were drawn in response to this question."),
+  })).describe("A history of previous follow-up questions and the cards that were drawn for them.").optional(),
+  followUpQuestion: z.string().describe("The user's new, current follow-up question about the reading."),
+  allDrawnCardNames: z.array(z.string()).describe("A list of all card names that have been drawn in this session so far."),
+});
+export type ClarifyTarotReadingInput = z.infer<typeof ClarifyTarotReadingInputSchema>;
 
 const ClarifyTarotReadingOutputSchema = z.object({
   clarification: z.string().describe('The answer to the user\'s follow-up question. If new cards were drawn, their names and interpretation MUST be included in this text.'),
@@ -62,10 +62,14 @@ IMPORTANT: There are only {{{availableCardsCount}}} cards left in the deck. You 
 Initial Interpretation: "{{{initialInterpretation}}}"
 {{#if clarificationHistory}}
 
-Clarification History:
+Conversation History:
 {{#each clarificationHistory}}
-- User asked: "{{this.question}}"
-- You answered: "{{this.answer}}"
+- User previously asked: "{{this.question}}"
+{{#if this.cardsDrawn}}
+- You drew these cards in response: {{#each this.cardsDrawn}}{{{this.cardName}}}{{#if this.reversed}} (Reversed){{/if}}{{#unless @last}}, {{/unless}}{{/each}}.
+{{else}}
+- You drew no new cards in response.
+{{/if}}
 {{/each}}
 {{/if}}
 
@@ -157,7 +161,7 @@ const answerWithoutNewCardsPrompt = ai.definePrompt({
 
 A user had a follow-up question, but we have decided NOT to draw any new cards. The answer is already in the original reading and conversation history.
 
-Your task is to answer their question based on the provided context, but without mentioning specific cards.
+Your task is to answer their question based on the provided context.
 
 RULES:
 1.  You MUST start your text with "Bet. We don't need to pull more fluff for this, the tea is already in the cards we got." or something similar.
@@ -167,10 +171,14 @@ RULES:
 Initial Interpretation: "{{{initialInterpretation}}}"
 {{#if clarificationHistory}}
 
-Clarification History:
+Conversation History:
 {{#each clarificationHistory}}
-- User asked: "{{this.question}}"
-- You answered: "{{this.answer}}"
+- User previously asked: "{{this.question}}"
+{{#if this.cardsDrawn}}
+- You drew these cards in response: {{#each this.cardsDrawn}}{{{this.cardName}}}{{#if this.reversed}} (Reversed){{/if}}{{#unless @last}}, {{/unless}}{{/each}}.
+{{else}}
+- You drew no new cards in response.
+{{/if}}
 {{/each}}
 {{/if}}
 
