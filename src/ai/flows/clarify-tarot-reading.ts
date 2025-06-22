@@ -63,14 +63,24 @@ Your decision, make it quick, kitten:`
 });
 
 // Step 2: LLM interprets the drawn cards (or just answers the question).
-const InterpretationInputSchema = ClarifyTarotReadingInputSchema.extend({
+const CardInterpretationInputSchema = ClarifyTarotReadingInputSchema.extend({
     newlyDrawnCards: z.array(CardDrawnSchema).describe("The new cards that were just drawn for clarification. Empty if no cards were drawn.")
+});
+
+const SingleCardInterpretationSchema = z.object({
+    cardName: z.string(),
+    interpretation: z.string().describe("The specific, cat-like, gen-alpha interpretation for this single card in the context of the user's follow-up question."),
+});
+
+const InterpretationOutputSchema = z.object({
+    overallInterpretation: z.string().describe("A cohesive summary that ties the interpretations of the individual cards together to answer the user's follow-up question. This should be written in a cat-like, gen-alpha tone."),
+    cardInterpretations: z.array(SingleCardInterpretationSchema).describe("An array containing the interpretation for EACH newly drawn card provided in the input. The length of this array MUST match the length of the 'newlyDrawnCards' input array.")
 });
 
 const interpretationPrompt = ai.definePrompt({
     name: 'interpretationPrompt',
-    input: { schema: InterpretationInputSchema },
-    output: { schema: z.object({ clarification: z.string() }) },
+    input: { schema: CardInterpretationInputSchema },
+    output: { schema: InterpretationOutputSchema },
     prompt: `You are Tarot Bestie, a chronically online, gen-alpha cat who is also a legendary tarot reader. You're chaotic but your insights are always on point, no cap. Use lots of gen alpha slang (like 'rizz', 'bet', 'no cap', 'slay', 'bussin'), cat puns, and a generally degen, slightly unhinged tone.
 
 A user had a follow-up question: "{{{followUpQuestion}}}"
@@ -81,9 +91,11 @@ To get the tea, you just pulled these cards:
 - {{{cardName}}}{{#if reversed}} (Reversed){{/if}}
 {{/each}}
 
-Now, give the lowdown. Interpret ONLY these cards to directly answer the user's question. Connect it back to the original reading. Your response text MUST include the names of these specific cards. Do NOT invent or mention any other cards. Slay.
+Your job is to interpret EACH of these cards and then give an overall summary.
+For each card in the \`newlyDrawnCards\` input, create a corresponding entry in the \`cardInterpretations\` output array.
+Then, write a final \`overallInterpretation\` that puts it all together to answer their question. Slay.
 {{else}}
-You decided not to draw any new cards. Answer their question directly based on the original reading ONLY. Do not mention any cards. Keep it real.
+You decided not to draw any new cards. Just answer their question directly in the \`overallInterpretation\` field based on the original reading. The \`cardInterpretations\` array should be empty. Keep it real.
 {{/if}}
 
 Original question: "{{{question}}}"
@@ -115,17 +127,32 @@ const clarifyTarotReadingFlow = ai.defineFlow(
         }
     }
     
-    // Step 3: Interpret the results (with or without new cards)
+    // Step 3: Get structured interpretation for the results (with or without new cards)
     const interpretationResult = await interpretationPrompt({
         ...input,
         newlyDrawnCards,
     });
     const interpretation = interpretationResult.output!;
 
-    // Step 4: Return the final, structured result.
+    // Step 4: Assemble the final human-readable response from the structured data.
+    let finalClarification = interpretation.overallInterpretation;
+
+    if (interpretation.cardInterpretations && interpretation.cardInterpretations.length > 0) {
+        const cardDetails = interpretation.cardInterpretations.map(ci => {
+            const card = newlyDrawnCards.find(c => c.cardName === ci.cardName);
+            const displayName = card?.reversed ? `${ci.cardName} (Reversed)` : ci.cardName;
+            return `\n\n**${displayName}**: ${ci.interpretation}`;
+        }).join('');
+
+        finalClarification = `${cardDetails}\n\n**The Lowdown:** ${interpretation.overallInterpretation}`;
+    }
+
+    // Step 5: Return the final, structured result for the frontend.
     return {
-        clarification: interpretation.clarification,
+        clarification: finalClarification,
         cardsDrawn: newlyDrawnCards
     };
   }
 );
+
+    
