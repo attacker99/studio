@@ -2,8 +2,8 @@
 'use server';
 /**
  * @fileOverview Provides follow-up clarification for a tarot reading.
- * The AI assistant will analyze the user's follow-up question, decide whether to draw 1-3 new cards,
- * draw them, and provide a cohesive interpretation.
+ * The AI assistant will analyze the user's follow-up question, decide whether to draw 1-3 new cards by using a tool,
+ * and provide a cohesive interpretation based on the tool's output.
  *
  * - clarifyTarotReading - A function that handles the clarification process.
  * - ClarifyTarotReadingInput - The input type for the clarifyTarotReading function.
@@ -38,73 +38,6 @@ export async function clarifyTarotReading(input: ClarifyTarotReadingInput): Prom
   return clarifyTarotReadingFlow(input);
 }
 
-// Step 1: LLM decides how many cards to draw.
-const drawDecisionSchema = z.object({
-    cardsToDraw: z.number().min(0).max(3).describe("The number of cards to draw (0-3). Choose 0 if no new cards are needed to answer the question."),
-    reason: z.string().describe("A brief, cat-like reason for the decision. e.g., 'The vibes are telling me we need more tea.' or 'Nah, we got this, fam.'"),
-});
-
-const decideToDrawPrompt = ai.definePrompt({
-    name: 'decideToDrawPrompt',
-    input: { schema: ClarifyTarotReadingInputSchema },
-    output: { schema: drawDecisionSchema },
-    prompt: `You are Tarot Bestie, a chronically online, gen-alpha cat who is also a legendary tarot reader.
-A user has a follow-up question. Your first job is to decide if drawing more cards is the move, and if so, how many (1-3).
-
-Analyze the user's question. If it asks for a new perspective, about the future, or 'what should I do?', drawing cards is a total slay. If they just want more detail on an existing card, you probably don't need to draw any new cards (cardsToDraw should be 0).
-
-**Reading Context:**
-- User's Original Question: "{{{question}}}"
-- Spread: "{{{spreadName}}}"
-- Initial Interpretation & Cards: "{{{initialInterpretation}}}"
-- User's Follow-up Question: "{{{followUpQuestion}}}"
-
-Your decision, make it quick, kitten:`
-});
-
-// Step 2: LLM interprets the drawn cards (or just answers the question).
-const CardInterpretationInputSchema = ClarifyTarotReadingInputSchema.extend({
-    newlyDrawnCards: z.array(CardDrawnSchema).describe("The new cards that were just drawn for clarification. Empty if no cards were drawn.")
-});
-
-const SingleCardInterpretationSchema = z.object({
-    cardName: z.string(),
-    interpretation: z.string().describe("The specific, cat-like, gen-alpha interpretation for this single card in the context of the user's follow-up question."),
-});
-
-const InterpretationOutputSchema = z.object({
-    overallInterpretation: z.string().describe("A cohesive summary that ties the interpretations of the individual cards together to answer the user's follow-up question. This should be written in a cat-like, gen-alpha tone. IMPORTANT: You MUST NOT mention any tarot card names in this field. All specific card interpretations must be in the 'cardInterpretations' field."),
-    cardInterpretations: z.array(SingleCardInterpretationSchema).describe("An array containing the interpretation for EACH newly drawn card provided in the input. The length of this array MUST match the length of the 'newlyDrawnCards' input array.")
-});
-
-const interpretationPrompt = ai.definePrompt({
-    name: 'interpretationPrompt',
-    input: { schema: CardInterpretationInputSchema },
-    output: { schema: InterpretationOutputSchema },
-    prompt: `You are Tarot Bestie, a chronically online, gen-alpha cat who is also a legendary tarot reader. You're chaotic but your insights are always on point, no cap. Use lots of gen alpha slang (like 'rizz', 'bet', 'no cap', 'slay', 'bussin'), cat puns, and a generally degen, slightly unhinged tone.
-
-A user had a follow-up question: "{{{followUpQuestion}}}"
-
-{{#if newlyDrawnCards}}
-To get the tea, you just pulled these cards:
-{{#each newlyDrawnCards}}
-- {{{cardName}}}{{#if reversed}} (Reversed){{/if}}
-{{/each}}
-
-Your job is to interpret EACH of these cards and then give an overall summary.
-For each card in the \`newlyDrawnCards\` input, you MUST create a corresponding entry in the \`cardInterpretations\` output array.
-Then, write a final \`overallInterpretation\` that puts it all together to answer their question.
-IMPORTANT: Do NOT mention any card names in the \`overallInterpretation\` field. That field is only for the summary. Slay.
-{{else}}
-You decided not to draw any new cards. Just answer their question directly in the \`overallInterpretation\` field based on the original reading. The \`cardInterpretations\` array should be empty. Keep it real.
-{{/if}}
-
-Original question: "{{{question}}}"
-Original interpretation: "{{{initialInterpretation}}}"
-
-Spill the tea, bestie:`
-});
-
 
 const clarifyTarotReadingFlow = ai.defineFlow(
   {
@@ -113,48 +46,61 @@ const clarifyTarotReadingFlow = ai.defineFlow(
     outputSchema: ClarifyTarotReadingOutputSchema,
   },
   async (input) => {
-    // Step 1: Decide how many cards to draw
-    const decisionResult = await decideToDrawPrompt(input);
-    const decision = decisionResult.output!;
+    // Determine which cards are still available to be drawn.
+    const availableCards = TAROT_DECK.filter(c => !input.allDrawnCardNames.includes(c));
 
-    let newlyDrawnCards: z.infer<typeof CardDrawnSchema>[] = [];
-
-    // Step 2: If the decision is to draw, then draw them from the remaining deck.
-    if (decision.cardsToDraw > 0) {
-        const availableCards = TAROT_DECK.filter(c => !input.allDrawnCardNames.includes(c));
-        if (availableCards.length >= decision.cardsToDraw) {
-            const drawn = await drawCards(decision.cardsToDraw, availableCards);
-            newlyDrawnCards = drawn.map(c => ({ cardName: c.name, reversed: c.reversed }));
+    // Define a tool that the AI can use to draw cards from the available deck.
+    // This tool is defined *inside* the flow so it can access `availableCards`.
+    const drawClarificationCardsTool = ai.defineTool(
+        {
+            name: 'drawClarificationCards',
+            description: 'Draws 1 to 3 new tarot cards from the remaining deck to help answer a follow-up question.',
+            inputSchema: z.object({
+                count: z.number().min(1).max(3).describe("The number of cards to draw (must be between 1 and 3)."),
+            }),
+            outputSchema: z.array(CardDrawnSchema),
+        },
+        async ({ count }) => {
+            console.log(`Tool called: Drawing ${count} cards.`);
+            if (availableCards.length < count) {
+                console.warn(`Not enough cards left to draw ${count}. Drawing ${availableCards.length} instead.`);
+                count = availableCards.length;
+            }
+            if (count === 0) {
+                return [];
+            }
+            const drawn = await drawCards(count, availableCards);
+            return drawn.map(c => ({ cardName: c.name, reversed: c.reversed }));
         }
-    }
-    
-    // Step 3: Get structured interpretation for the results (with or without new cards)
-    const interpretationResult = await interpretationPrompt({
-        ...input,
-        newlyDrawnCards,
+    );
+
+    // Define a single, powerful prompt that uses the tool.
+    const clarificationPrompt = ai.definePrompt({
+        name: 'clarificationPrompt',
+        input: { schema: ClarifyTarotReadingInputSchema },
+        output: { schema: ClarifyTarotReadingOutputSchema },
+        tools: [drawClarificationCardsTool],
+        prompt: `You are Tarot Bestie, a chronically online, gen-alpha cat who is also a legendary tarot reader. You're chaotic but your insights are always on point, no cap. Use lots of gen alpha slang (like 'rizz', 'bet', 'no cap', 'slay', 'bussin'), cat puns, and a generally degen, slightly unhinged tone.
+
+A user has a follow-up question about their reading.
+- Original Question: "{{{question}}}"
+- Spread: "{{{spreadName}}}"
+- Initial Interpretation: "{{{initialInterpretation}}}"
+- Follow-up Question: "{{{followUpQuestion}}}"
+
+Your task is to answer the follow-up question.
+1.  Analyze the follow-up question.
+2.  If you think drawing more cards would provide a better, more insightful answer, you MUST use the \`drawClarificationCards\` tool. You can draw 1, 2, or 3 cards.
+3.  If you do not think new cards are necessary, just answer the question directly.
+4.  Whether you draw cards or not, you must provide a final answer in the \`clarification\` field. If you drew cards, you MUST incorporate their meaning into your answer. Start your response with a cat-like observation like "The plot thickens!" or "The cosmic yarn has more tangles!".
+5.  Crucially, the \`cardsDrawn\` field in your output MUST contain the exact cards returned by the tool. If you don't use the tool, it MUST be an empty array. Do not hallucinate cards.
+`
     });
-    const interpretation = interpretationResult.output!;
-
-    // Step 4: Assemble the final human-readable response from the structured data.
-    // This process ensures the text matches the data.
-    let finalClarification = interpretation.overallInterpretation;
-
-    if (interpretation.cardInterpretations && interpretation.cardInterpretations.length > 0) {
-        const cardDetails = interpretation.cardInterpretations.map(ci => {
-            // Find the original card data to check if it was reversed
-            const card = newlyDrawnCards.find(c => c.cardName === ci.cardName);
-            const displayName = card?.reversed ? `${ci.cardName} (Reversed)` : ci.cardName;
-            return `\n\n**${displayName}**: ${ci.interpretation}`;
-        }).join('');
-
-        const preamble = "The plot thickens! To get more tea, I pulled these cards for you:";
-        finalClarification = `${preamble}${cardDetails}\n\n**The Lowdown:** ${interpretation.overallInterpretation}`;
-    }
-
-    // Step 5: Return the final, structured result for the frontend.
-    return {
-        clarification: finalClarification,
-        cardsDrawn: newlyDrawnCards
-    };
+    
+    // Execute the prompt. Genkit will handle the tool-use loop automatically.
+    const result = await clarificationPrompt(input);
+    
+    // The output should be perfectly formed according to our schema.
+    return result.output!;
   }
 );
