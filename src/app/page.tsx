@@ -213,7 +213,7 @@ export default function Home() {
         return (
           <Card className="w-full max-w-2xl bg-card/70 backdrop-blur-sm">
             <CardHeader className="text-center">
-              <CardTitle className="font-headline text-3xl md:text-4xl">Spill the Tea to Your Tarot Bestie</CardTitle>
+              <CardTitle className="font-headline text-3xl md:text-4xl">Spill the Tea to Your Tarot Kitty</CardTitle>
               <CardDescription>what's the 411, kitten? no cap.</CardDescription>
             </CardHeader>
             <CardContent>
@@ -418,7 +418,7 @@ export default function Home() {
               <Card className="bg-card/70 backdrop-blur-sm animate-deal-card" style={{ animationDelay: `${readingResult.cards.length * 0.1 + 0.7}s`}}>
                 <CardHeader>
                   <CardTitle className="font-headline text-xl">Got more questions? The kitty is listening.</CardTitle>
-                  <CardDescription>Ask your bestie a follow-up question. It might even draw more cards if the vibe is right.</CardDescription>
+                  <CardDescription>Ask your kitty a follow-up question. It might even draw more cards if the vibe is right.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid w-full gap-4">
@@ -466,9 +466,9 @@ export default function Home() {
         <header className="flex flex-col items-center text-center">
             <Logo />
             <h1 className="font-headline text-5xl md:text-7xl font-bold tracking-tighter text-glow">
-            Tarot Bestie
+            Tarot Kitty
             </h1>
-            <p className="text-muted-foreground mt-2">Your gen-alpha bestie for chaotic-good tarot readings</p>
+            <p className="text-muted-foreground mt-2">Your gen-alpha kitty for chaotic-good tarot readings</p>
         </header>
         {renderContent()}
       </main>

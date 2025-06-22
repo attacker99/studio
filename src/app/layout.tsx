@@ -4,8 +4,8 @@ import { Toaster } from "@/components/ui/toaster"
 import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
-  title: 'Tarot Bestie',
-  description: 'Your gen-alpha bestie for chaotic-good tarot readings',
+  title: 'Tarot Kitty',
+  description: 'Your gen-alpha kitty for chaotic-good tarot readings',
 };
 
 export default function RootLayout({
