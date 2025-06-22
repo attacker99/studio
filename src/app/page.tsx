@@ -153,9 +153,11 @@ export default function Home() {
 
       if (result.cardsDrawn && result.cardsDrawn.length > 0) {
         const newCardsWithImages: CardWithImage[] = result.cardsDrawn.map((card, index) => {
-          // Sanitize the card name from the AI to prevent crashes.
-          // The AI sometimes includes "(Reversed)" in the name string.
-          const cleanCardName = card.cardName.replace(/\s*\(Reversed\)\s*/i, '').trim();
+          // The AI can be inconsistent. We need to reliably determine the reversed status
+          // and get a clean name for looking up the image file.
+          const isReversed = card.reversed || /\(reversed\)/i.test(card.cardName);
+          const cleanCardName = card.cardName.replace(/\s*\(reversed\)\s*/i, '').trim();
+
           const cardImage = cardImageMap[cleanCardName];
 
           if (!cardImage) {
@@ -164,13 +166,14 @@ export default function Home() {
           }
           
           return {
-            name: cleanCardName, // Use the sanitized name for display
-            reversed: card.reversed,
+            name: cleanCardName, // Use the clean name for display
+            reversed: isReversed, // Use our reliable boolean to flip the card
             image: cardImage,
-            id: `clarify-${clarificationHistory.length}-${index}-${card.cardName}`, // Use original name for a unique key
+            id: `clarify-${clarificationHistory.length}-${index}-${card.cardName}`,
             positionLabel: 'Clarification',
           };
-        }).filter(Boolean) as CardWithImage[]; // Filter out any nulls from missing images
+        }).filter((c): c is CardWithImage => c !== null);
+
 
         if (newCardsWithImages.length > 0) {
           setReadingResult(prev => {
@@ -180,7 +183,8 @@ export default function Home() {
           
           setRevealedCards(prev => [...prev, ...new Array(newCardsWithImages.length).fill(true)]);
           
-          setAllDrawnCardNames(prev => [...prev, ...newCardsWithImages.map(c => c.name)]);
+          const newDrawnCardNames = newCardsWithImages.map(c => c.name);
+          setAllDrawnCardNames(prev => [...prev, ...newDrawnCardNames]);
         }
       }
 
