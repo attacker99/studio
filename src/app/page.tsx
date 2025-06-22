@@ -310,7 +310,7 @@ export default function Home() {
         return (
             <div className="w-full max-w-6xl space-y-8">
               <div className="text-center animate-deal-card" style={{ animationDelay: '0s'}}>
-                <h2 className="font-headline text-3xl md:text-4xl">The Tea Has Been Spilled</h2>
+                <h2 className="font-headline text-3xl md:text-4xl">The Cosmic Yarn Has Unraveled</h2>
                 <p className="text-muted-foreground max-w-2xl mx-auto">&quot;{question}&quot;</p>
               </div>
 
@@ -403,7 +403,7 @@ export default function Home() {
               {revealedCards.slice(0, initialCardCount).every(r => r) && readingResult.interpretation && (
                 <Card className="bg-card/70 backdrop-blur-sm animate-deal-card" style={{ animationDelay: `${readingResult.cards.length * 0.1 + 0.7}s`}}>
                   <CardHeader>
-                    <CardTitle className="font-headline text-xl">Go Deeper</CardTitle>
+                    <CardTitle className="font-headline text-xl">Got more questions? The kitty is listening.</CardTitle>
                     <CardDescription>Ask your bestie a follow-up question. It might even draw more cards if the vibe is right.</CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -426,7 +426,7 @@ export default function Home() {
                         ) : (
                           <Sparkles className="mr-2 h-5 w-5" />
                         )}
-                        {isClarifying ? 'Consulting the Void...' : 'Go Deeper'}
+                        {isClarifying ? 'Consulting the cosmic litterbox...' : 'Ask the kitty'}
                       </Button>
                     </div>
                   </CardContent>
