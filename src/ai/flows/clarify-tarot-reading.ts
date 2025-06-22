@@ -40,7 +40,11 @@ const ClarifyTarotReadingOutputSchema = z.object({
 export type ClarifyTarotReadingOutput = z.infer<typeof ClarifyTarotReadingOutputSchema>;
 
 export async function clarifyTarotReading(input: ClarifyTarotReadingInput): Promise<ClarifyTarotReadingOutput> {
-  return clarifyTarotReadingFlow(input);
+  const flowResult = await clarifyTarotReadingFlow(input);
+  if (!flowResult) {
+    throw new Error("The clarification flow failed to return a result.");
+  }
+  return flowResult;
 }
 
 // Prompt 1: Decide how many cards to draw. This is simple and reliable.
@@ -153,7 +157,7 @@ Initial Interpretation: "{{{initialInterpretation}}}"
 Conversation History:
 {{#each clarificationHistory}}
 - User previously asked: "{{this.question}}"
-{{#if this.cardsDrawn.length}}
+{{#if this.cardsDrawn}}
 - You drew cards in response to this question.
 {{else}}
 - You drew no new cards in response.
