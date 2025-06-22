@@ -98,7 +98,10 @@ const answerFollowUpWithoutCardsPrompt = ai.definePrompt({
 
 A user has a follow-up question about their tarot reading. You have decided NOT to draw any new cards.
 Your task is to answer their follow-up question using ONLY the information from the initial reading provided below.
-DO NOT invent new information. DO NOT suggest drawing cards. DO NOT mention any cards that were not in the initial interpretation. Simply provide a clarifying answer based on what has already been said.
+
+IMPORTANT: Start your response by making it clear that no new cards were drawn. Say something like "Bet. We don't need to pull more fluff for this, the tea is already in the cards we got." or "No new cards needed, kitten. Let's look closer at what we already have." Then, proceed to answer the question by referencing the initial interpretation.
+
+DO NOT invent new information. DO NOT suggest drawing more cards. You can refer to cards from the initial reading to clarify their meaning, but do not imply new cards have been drawn.
 
 - Original Question: "{{{question}}}"
 - Spread: "{{{spreadName}}}"
