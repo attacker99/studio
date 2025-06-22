@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { suggestTarotSpread, type SuggestTarotSpreadOutput, type SingleSpreadSuggestion } from '@/ai/flows/suggest-tarot-spread';
-import { interpretTarotCards, InterpretTarotCardsInput } from '@/ai/flows/interpret-tarot-cards';
+import { interpretTarotCards, type InterpretTarotCardsInput } from '@/ai/flows/interpret-tarot-cards';
+import { clarifyTarotReading, type ClarifyTarotReadingInput } from '@/ai/flows/clarify-tarot-reading';
 import { drawCards } from '@/lib/tarot';
 import { cardImageMap } from '@/lib/card-images';
 import { Loader } from '@/components/ui/loader';
@@ -32,6 +33,10 @@ export default function Home() {
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [isPending, startTransition] = useTransition();
+
+  const [followUpQuestion, setFollowUpQuestion] = useState('');
+  const [clarificationHistory, setClarificationHistory] = useState<string[]>([]);
+  const [isClarifying, setIsClarifying] = useState(false);
 
   const { toast } = useToast();
 
@@ -136,6 +141,46 @@ export default function Home() {
     });
   };
 
+  const handleFollowUpSubmit = async () => {
+    if (!followUpQuestion.trim() || !readingResult || !confirmedSpread) {
+      return;
+    }
+    setIsClarifying(true);
+
+    const spreadPartsForClarification: ClarifyTarotReadingInput['spreadParts'] = [];
+    let cardIndex = 0;
+    for (const part of confirmedSpread.parts) {
+      const cardsWithPositions = part.positions.map((positionLabel, indexInPart) => {
+        const card = readingResult.cards[cardIndex + indexInPart];
+        return { cardName: card.name, positionLabel, reversed: card.reversed };
+      });
+      spreadPartsForClarification.push({
+        label: part.label,
+        cards: cardsWithPositions,
+      });
+      cardIndex += part.positions.length;
+    }
+
+    try {
+      const result = await clarifyTarotReading({
+        question,
+        spreadName: confirmedSpread.suggestedSpread,
+        spreadParts: spreadPartsForClarification,
+        initialInterpretation: readingResult.interpretation,
+        followUpQuestion,
+      });
+      setClarificationHistory(prev => [...prev, result.clarification]);
+      setFollowUpQuestion('');
+    } catch (error) {
+      console.error(error);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+      toast({ title: 'Failed to get clarification.', description: errorMessage, variant: 'destructive' });
+    } finally {
+      setIsClarifying(false);
+    }
+  };
+
+
   const handleReset = () => {
     setStep('question');
     setQuestion('');
@@ -145,6 +190,8 @@ export default function Home() {
     setConfirmedSpread(null);
     setLoadingMessage('');
     setRevealedCards([]);
+    setFollowUpQuestion('');
+    setClarificationHistory([]);
   };
 
   const renderContent = () => {
@@ -274,7 +321,7 @@ export default function Home() {
                             const overallIndex = partStartIndex + indexInPart;
                             return (
                               <TarotCard
-                                key={card.name}
+                                key={card.name + overallIndex}
                                 cardName={card.name}
                                 imageUrl={card.image}
                                 isRevealed={revealedCards[overallIndex]}
@@ -302,6 +349,57 @@ export default function Home() {
                   </CardHeader>
                   <CardContent className="prose prose-invert max-w-none text-foreground/90 font-body text-base">
                     <ReactMarkdown>{readingResult.interpretation}</ReactMarkdown>
+                  </CardContent>
+                </Card>
+              )}
+
+              {clarificationHistory.length > 0 && (
+                <div className="space-y-4">
+                  {clarificationHistory.map((clarification, index) => (
+                    <Card key={index} className="bg-card/70 backdrop-blur-sm animate-deal-card">
+                       <CardHeader>
+                        <CardTitle className="font-headline text-xl flex items-center gap-3">
+                          <Sparkles className="text-accent h-5 w-5"/>
+                          The Plot Thickens...
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="prose prose-invert max-w-none text-foreground/90 font-body text-base">
+                         <ReactMarkdown>{clarification}</ReactMarkdown>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {revealedCards.every(r => r) && readingResult.interpretation && (
+                <Card className="bg-card/70 backdrop-blur-sm animate-deal-card" style={{ animationDelay: `${readingResult.cards.length * 0.1 + 0.7}s`}}>
+                  <CardHeader>
+                    <CardTitle className="font-headline text-xl">Go Deeper</CardTitle>
+                    <CardDescription>Ask the void kitty a follow-up question, or ask it to draw a clarifying card.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid w-full gap-4">
+                      <Textarea
+                        placeholder="e.g., 'tell me more about the tower card' or 'draw one more card for the outcome'"
+                        value={followUpQuestion}
+                        onChange={(e) => setFollowUpQuestion(e.target.value)}
+                        rows={3}
+                        className="bg-background/80"
+                        disabled={isClarifying}
+                      />
+                      <Button
+                        onClick={handleFollowUpSubmit}
+                        disabled={isClarifying || !followUpQuestion.trim()}
+                        size="lg"
+                      >
+                        {isClarifying ? (
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        ) : (
+                          <Sparkles className="mr-2 h-5 w-5" />
+                        )}
+                        {isClarifying ? 'Consulting the Void...' : 'Go Deeper'}
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               )}
