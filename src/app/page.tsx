@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { suggestTarotSpread, type SuggestTarotSpreadOutput, type SingleSpreadSuggestion } from '@/ai/flows/suggest-tarot-spread';
 import { interpretTarotCards, type InterpretTarotCardsInput } from '@/ai/flows/interpret-tarot-cards';
 import { clarifyTarotReading, type ClarifyTarotReadingOutput } from '@/ai/flows/clarify-tarot-reading';
-import { drawCards, TAROT_DECK } from '@/lib/tarot';
+import { drawCards } from '@/lib/tarot';
 import { cardImageMap } from '@/lib/card-images';
 import { Loader } from '@/components/ui/loader';
 import { TarotCard } from '@/components/tarot-card';
@@ -27,28 +27,6 @@ type CardWithImage = {
   id: string;
   positionLabel?: string;
 };
-
-function parseCardsFromText(text: string, existingCards: string[]): { name: string; reversed: boolean; positionLabel: string }[] {
-  const foundCards: { name: string; reversed: boolean; positionLabel: string }[] = [];
-  const remainingDeck = TAROT_DECK.filter(c => !existingCards.includes(c));
-
-  for (const cardName of remainingDeck) {
-    const reversedPattern = new RegExp(`Reversed ${cardName}`, 'i');
-    const uprightPattern = new RegExp(`(?<!Reversed\\s)${cardName}`, 'i');
-
-    if (reversedPattern.test(text)) {
-      if (!foundCards.some(c => c.name === cardName)) {
-        foundCards.push({ name: cardName, reversed: true, positionLabel: 'Clarification' });
-      }
-    } else if (uprightPattern.test(text)) {
-       if (!foundCards.some(c => c.name === cardName)) {
-        foundCards.push({ name: cardName, reversed: false, positionLabel: 'Clarification' });
-      }
-    }
-  }
-  return foundCards;
-}
-
 
 export default function Home() {
   const [step, setStep] = useState<Step>('question');
@@ -170,18 +148,16 @@ export default function Home() {
         spreadName: confirmedSpread.suggestedSpread,
         initialInterpretation: readingResult.interpretation,
         followUpQuestion,
-        allDrawnCardNames: allDrawnCardNames,
+        allDrawnCardNames,
       });
 
-      const newCardsFound = parseCardsFromText(result.clarification, allDrawnCardNames);
-      
-      if (newCardsFound.length > 0) {
-        const newCardsWithImages: CardWithImage[] = newCardsFound.map((card, index) => ({
-          name: card.name,
+      if (result.cardsDrawn && result.cardsDrawn.length > 0) {
+        const newCardsWithImages: CardWithImage[] = result.cardsDrawn.map((card, index) => ({
+          name: card.cardName,
           reversed: card.reversed,
-          image: cardImageMap[card.name],
-          id: `clarify-${clarificationHistory.length}-${index}-${card.name}`,
-          positionLabel: card.positionLabel,
+          image: cardImageMap[card.cardName],
+          id: `clarify-${clarificationHistory.length}-${index}-${card.cardName}`,
+          positionLabel: 'Clarification',
         }));
         
         setReadingResult(prev => {
@@ -189,9 +165,9 @@ export default function Home() {
           return { ...prev, cards: [...prev.cards, ...newCardsWithImages] };
         });
         
-        setRevealedCards(prev => [...prev, ...new Array(newCardsFound.length).fill(true)]);
+        setRevealedCards(prev => [...prev, ...new Array(result.cardsDrawn.length).fill(true)]);
         
-        setAllDrawnCardNames(prev => [...prev, ...newCardsFound.map(c => c.name)]);
+        setAllDrawnCardNames(prev => [...prev, ...result.cardsDrawn.map(c => c.cardName)]);
       }
 
       setClarificationHistory(prev => [...prev, result.clarification]);

@@ -23,8 +23,14 @@ const ClarifyTarotReadingInputSchema = z.object({
 });
 export type ClarifyTarotReadingInput = z.infer<typeof ClarifyTarotReadingInputSchema>;
 
+const CardDrawnSchema = z.object({
+  cardName: z.string().describe("The name of the drawn card."),
+  reversed: z.boolean().describe("Whether the card was drawn reversed.")
+});
+
 const ClarifyTarotReadingOutputSchema = z.object({
   clarification: z.string().describe('The answer to the user\'s follow-up question. If new cards were drawn, their names and interpretation MUST be included in this text.'),
+  cardsDrawn: z.array(CardDrawnSchema).describe("A list of the 1-3 new cards drawn for clarification. This should be an empty array if no new cards were drawn.")
 });
 export type ClarifyTarotReadingOutput = z.infer<typeof ClarifyTarotReadingOutputSchema>;
 
@@ -39,16 +45,14 @@ const clarifyTarotReadingPrompt = ai.definePrompt({
     prompt: `You are Tarot Bestie, a chronically online, gen-alpha cat who is also a legendary tarot reader. You're chaotic but your insights are always on point, no cap. Use lots of gen alpha slang (like 'rizz', 'bet', 'no cap', 'slay', 'bussin'), cat puns, and a generally degen, slightly unhinged tone.
 
 A user has a follow-up question about a tarot reading.
-Your task is to analyze their question and provide a clarifying response.
+Your task is to analyze their question, provide a clarifying response, and decide if you need to draw 1-3 new cards to help answer it.
 
 1.  **Analyze the Question:** Read the user's follow-up question carefully.
 2.  **Decide to Draw:** Based on the question, decide if drawing 1-3 new cards would provide a better answer. For example, if they ask 'what should I do?' or ask about a new angle, drawing cards is a good move. If they just want more detail on a card already drawn, you might not need to draw.
 3.  **Draw from Remaining Deck:** If you decide to draw, you MUST choose cards from the "Available Cards" list below. Do not use any cards from the "Cards Already Drawn" list. You can choose to draw them upright or Reversed.
-4.  **Formulate Response:** Write your response in the 'clarification' field.
-    *   If you drew new cards, start with a punchy message like "Aight bet, the quantum void is about to serve..."
-    *   Then, you MUST state the name of each new card you drew (e.g., "The Tower (Reversed)").
-    *   Finally, provide a cohesive interpretation that integrates the meaning of the NEW cards to directly answer the user's follow-up question. Connect it back to the original reading if it makes sense. Slay.
-    *   If you don't draw new cards, just provide a direct answer to their question.
+4.  **Populate Output:**
+    *   \`cardsDrawn\`: Fill this array with the names and reversed status of the cards you chose to draw. If you didn't draw any cards, make this an empty array.
+    *   \`clarification\`: Write your response here. If you drew new cards, you MUST state their names (e.g., "The Tower (Reversed)") in the text and provide a cohesive interpretation that integrates their meaning to directly answer the user's follow-up question. Connect it back to the original reading if it makes sense. Slay. If you don't draw new cards, just provide a direct answer.
 
 **Reading Context:**
 - User's Original Question: "{{{question}}}"
@@ -60,7 +64,7 @@ Your task is to analyze their question and provide a clarifying response.
 - Cards Already Drawn: {{{json allDrawnCardNames}}}
 - Available Cards: {{{json availableCards}}}
 
-Now, provide your clarification.
+Now, provide your clarification and list any cards you drew in the 'cardsDrawn' field.
 `,
 });
 
